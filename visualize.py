@@ -3,6 +3,11 @@ import pandas as pd
 import numpy as np
 import argparse
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+
+
+
+
 
 def diagnostic_plots(filename):
   #Check metadata of given stock
@@ -23,6 +28,8 @@ def diagnostic_plots(filename):
     print(train_set.info)
     print('Test dataset')
     print(test_set.info)
+
+    return train_set
   
 def extract_stock_name(filename):
   if filename.endswith('.us.txt'):
@@ -52,11 +59,30 @@ def number_of_days_in_year(year):
   number_of_days = (last_day - first_day).days + 1
   return number_of_days
 
+def make_outputdirs(outputdir, filename):
+  if not os.path.exists(outputdir):
+    stock_name = extract_stock_name(filename)
+    os.makedirs(outputdir + '/' + stock_name)
+  else:
+    print('Exiting. Outputdir, {}, already exists. Delete and rerun, rename, or run something else ;)')
+    exit()
+
+def make_plots(dataset):
+  stock_name = extract_stock_name(args.filename)
+  for var in dataset:
+    print(var) 
+    ax = dataset.hist(column = 'High') 
+    fig = ax[0][0].get_figure()
+    fig.savefig(args.outputdir + '/' + stock_name + '/' + var + '.pdf')
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description = 'arg parser for visualize.py')
   parser.add_argument('-f', '--filename', type = str, help = 'input file')
   parser.add_argument('-v', '--verbose', dest = 'verbose', action = 'count', default = 0, help = 'Enable verbose output (not default). More vs provide more output.')
   parser.add_argument('-t', '--testsize', type = float, dest = 'testsize', default = 0.2, help = 'Size of test set')
+  parser.add_argument('-o', '--outputdir', type = str, dest = 'outputdir', default = 'output', help = 'name of outputdir')
   args = parser.parse_args()
 
-  diagnostic_plots(args.filename)
+  make_outputdirs(args.outputdir, args.filename)
+  train_set = diagnostic_plots(args.filename)
+  make_plots(train_set)
