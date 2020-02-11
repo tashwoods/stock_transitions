@@ -74,14 +74,14 @@ def make_histograms(stock_object):
     ax = stock_object.train_set.hist(column = var) 
     fig = ax[0][0].get_figure()
     fig.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
-  plt.clf()
+  plt.close('all')
 
 def make_time_dependent_plots(stock_object):
   for var in stock_object.train_set.columns:
     if var != args.date_name:
       stock_object.train_set.plot(x = args.date_name, y = var)
       plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_time.pdf')
-  plt.clf()
+  plt.close('all')
   
 
 def make_overlay_plots(stock_object):
@@ -93,14 +93,27 @@ def make_overlay_plots(stock_object):
 
 def make_scatter_plots(stock_object):
   for i in range(len(stock_object.train_set.columns) - 1):
-    var1 = stock_object.train_set.iloc[:,i]
-    var2 = stock_object.train_set.iloc[:,i+1]
-    print(var1)
-    print(var2)
-    if var1.name != args.date_name and var1.name != args.open_int_name and var2.name != args.date_name and var2.name != args.open_int_name:
-      print(stock_object.train_set.columns[i])
-      stock_object.train_set.plot(kind = 'scatter', x = stock_object.train_set.columns[i], y = stock_object.train_set.columns[i+1], alpha = 0.1)
-      plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/scatter_' + var1.name + '_' + var2.name + '_.pdf')
+    for j in range(i+1, len(stock_object.train_set.columns) - 1):
+      var1 = stock_object.train_set.iloc[:,i]
+      var2 = stock_object.train_set.iloc[:,j]
+
+      fig = stock_object.train_set.plot(kind = 'scatter', x = stock_object.train_set.columns[i], y = stock_object.train_set.columns[j], alpha = 0.1)
+      plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/scatter_' + var1.name + '_' + var2.name + '.pdf')
+      plt.close('all')
+
+def make_scatter_heat_plots(stock_object):
+  for i in range(len(stock_object.train_set.columns) - 1):
+    for j in range(i+1, len(stock_object.train_set.columns) - 1):
+      for k in range(j+1, len(stock_object.train_set.columns) - 1):
+        for l in range(k+1, len(stock_object.train_set.columns) - 1):
+          var1 = stock_object.train_set.iloc[:,i]
+          var2 = stock_object.train_set.iloc[:,j]
+          var3 = stock_object.train_set.iloc[:,k]
+          var4 = stock_object.train_set.iloc[:,l]
+
+          fig = stock_object.train_set.plot(kind = 'scatter', x = stock_object.train_set.columns[i], y = stock_object.train_set.columns[j], alpha = 0.4, s = var3, label = var3.name, c = var4, cmap = plt.get_cmap('jet'), colorbar = True)
+          plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/heat_scatter_' + var1.name + '_' + var2.name + '_' + var3.name + '_' + var4.name + '.pdf')
+          plt.close('all')
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description = 'arg parser for visualize.py')
@@ -122,3 +135,4 @@ if __name__ == '__main__':
   make_overlay_plots(stock_object)
   make_time_dependent_plots(stock_object)
   make_scatter_plots(stock_object)
+  make_scatter_heat_plots(stock_object)
