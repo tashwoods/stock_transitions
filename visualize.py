@@ -85,14 +85,22 @@ def make_time_dependent_plots(stock_object):
   
 
 def make_overlay_plots(stock_object):
-  var = 'small'
   for var in stock_object.train_set.columns:
     if var != args.date_name and var!= args.volume_name and var!= args.open_int_name:
       plt.plot('Date', var, data = stock_object.train_set, markerfacecolor = 'blue', linewidth = 0.2)
-  #plt.plot('Date', 'High', data = stock_object.train_set, markerfacecolor = 'blue')
-  #plt.plot('Date', 'Low', data = stock_object.train_set, markerfacecolor = 'red')
   plt.legend()
-  plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_overlay.pdf')
+  plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/stock_variables_overlay.pdf')
+
+def make_scatter_plots(stock_object):
+  for i in range(len(stock_object.train_set.columns) - 1):
+    var1 = stock_object.train_set.iloc[:,i]
+    var2 = stock_object.train_set.iloc[:,i+1]
+    print(var1)
+    print(var2)
+    if var1.name != args.date_name and var1.name != args.open_int_name and var2.name != args.date_name and var2.name != args.open_int_name:
+      print(stock_object.train_set.columns[i])
+      stock_object.train_set.plot(kind = 'scatter', x = stock_object.train_set.columns[i], y = stock_object.train_set.columns[i+1], alpha = 0.1)
+      plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/scatter_' + var1.name + '_' + var2.name + '_.pdf')
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description = 'arg parser for visualize.py')
@@ -113,3 +121,4 @@ if __name__ == '__main__':
   make_histograms(stock_object)
   make_overlay_plots(stock_object)
   make_time_dependent_plots(stock_object)
+  make_scatter_plots(stock_object)
