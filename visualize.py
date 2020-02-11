@@ -71,19 +71,28 @@ def make_nested_dir(output_dir, nested_dir):
 
 def make_histograms(stock_object):
   for var in stock_object.train_set:
-    print(var) 
     ax = stock_object.train_set.hist(column = var) 
     fig = ax[0][0].get_figure()
-    fig.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + 'hist.pdf')
+    fig.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
+  plt.clf()
 
 def make_time_dependent_plots(stock_object):
-  print(stock_object.train_set.info())
   for var in stock_object.train_set.columns:
     if var != args.date_name:
-      print('hi')
-      print(var)
       stock_object.train_set.plot(x = args.date_name, y = var)
       plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_time.pdf')
+  plt.clf()
+  
+
+def make_overlay_plots(stock_object):
+  var = 'small'
+  for var in stock_object.train_set.columns:
+    if var != args.date_name and var!= args.volume_name and var!= args.open_int_name:
+      plt.plot('Date', var, data = stock_object.train_set, markerfacecolor = 'blue', linewidth = 0.2)
+  #plt.plot('Date', 'High', data = stock_object.train_set, markerfacecolor = 'blue')
+  #plt.plot('Date', 'Low', data = stock_object.train_set, markerfacecolor = 'red')
+  plt.legend()
+  plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_overlay.pdf')
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description = 'arg parser for visualize.py')
@@ -92,6 +101,8 @@ if __name__ == '__main__':
   parser.add_argument('-t', '--test_size', type = float, dest = 'test_size', default = 0.2, help = 'Size of test set')
   parser.add_argument('-o', '--output_dir', type = str, dest = 'output_dir', default = 'output', help = 'name of output_dir')
   parser.add_argument('-d', '--date_name', type = str, dest = 'date_name', default = 'Date', help = 'name of Date variable in dataset')
+  parser.add_argument('-vol', '--volume_name', type = str, dest = 'volume_name', default = 'Volume', help = 'name of Volume variable in dataset')
+  parser.add_argument('-open_int', '--open_int_name', type = str, dest = 'open_int_name', default = 'OpenInt', help = 'name of OpenInt variable in dataset')
   args = parser.parse_args()
 
   make_output_dir(args.output_dir)
@@ -100,4 +111,5 @@ if __name__ == '__main__':
   test_set,train_set = make_test_train_datasets(args.file_name)
   stock_object = stock_object(args.file_name, get_stock_name(args.file_name), test_set, train_set)
   make_histograms(stock_object)
+  make_overlay_plots(stock_object)
   make_time_dependent_plots(stock_object)
