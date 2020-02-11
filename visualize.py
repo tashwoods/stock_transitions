@@ -17,6 +17,9 @@ def make_test_train_datasets(file_name):
   #Extract train and test set
   train_set, test_set = train_test_split(formatted_data, test_size = args.test_size, random_state = 42) 
 
+  #Order train and test set by ascending date
+  train_set = train_set.sort_values(by = args.date_name)
+  test_set = test_set.sort_values(by = args.date_name)
   if args.verbose > 0:
     formatted_data.info()
     print('Head of entire dataset')
@@ -36,8 +39,8 @@ def get_stock_name(file_name):
 def get_data(file_name):
   #reformat date from Y-M-D to Y.day/365
   formatted_data = pd.read_csv(file_name) 
-  formatted_data.Date = formatted_data['Date'].str.replace('-','').astype(int)
-  formatted_data['Date'] = formatted_data['Date'].apply(get_day_of_year)
+  formatted_data[args.date_name] = formatted_data[args.date_name].str.replace('-','').astype(int)
+  formatted_data[args.date_name] = formatted_data[args.date_name].apply(get_day_of_year)
   return formatted_data
 
 def get_day_of_year(date):
@@ -46,7 +49,7 @@ def get_day_of_year(date):
   days_in_year = get_number_of_days_in_year(date.year)
   day_of_year = date.year+(((date - first_day).days)/(days_in_year)) 
   if args.verbose > 1:
-    print('date: {} day of year: {} ndays_year: {}, calculated: {}'.format(date,((date - first_day).days), days_in_year, modified_date))
+    print('date: {} day of year: {} ndays_year: {}, calculated: {}'.format(date,((date - first_day).days), days_in_year, day_of_year))
   return day_of_year
 
 def get_number_of_days_in_year(year):
@@ -71,15 +74,24 @@ def make_histograms(stock_object):
     print(var) 
     ax = stock_object.train_set.hist(column = var) 
     fig = ax[0][0].get_figure()
-    fig.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '.pdf')
+    fig.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + 'hist.pdf')
 
 def make_time_dependent_plots(stock_object):
+  print(stock_object.train_set.info())
+  for var in stock_object.train_set.columns:
+    if var != args.date_name:
+      print('hi')
+      print(var)
+      stock_object.train_set.plot(x = args.date_name, y = var)
+      plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_time.pdf')
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description = 'arg parser for visualize.py')
   parser.add_argument('-f', '--file_name', type = str, help = 'input file')
   parser.add_argument('-v', '--verbose', dest = 'verbose', action = 'count', default = 0, help = 'Enable verbose output (not default). Add more vs for more output.')
   parser.add_argument('-t', '--test_size', type = float, dest = 'test_size', default = 0.2, help = 'Size of test set')
   parser.add_argument('-o', '--output_dir', type = str, dest = 'output_dir', default = 'output', help = 'name of output_dir')
+  parser.add_argument('-d', '--date_name', type = str, dest = 'date_name', default = 'Date', help = 'name of Date variable in dataset')
   args = parser.parse_args()
 
   make_output_dir(args.output_dir)
