@@ -5,6 +5,7 @@ import argparse
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from pathlib import Path
+from pylab import *
 from classes import *
 
 
@@ -71,8 +72,12 @@ def make_nested_dir(output_dir, nested_dir):
 
 def make_histograms(stock_object):
   for var in stock_object.train_set:
+
     ax = stock_object.train_set.hist(column = var) 
     fig = ax[0][0].get_figure()
+    var_stats = str(stock_object.train_set[var].describe())
+    var_stats = var_stats[:var_stats.find('Name')]
+    fig.text(0.7,0.5,str(var_stats))
     fig.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
   plt.close('all')
 
@@ -111,7 +116,7 @@ def make_scatter_heat_plots(stock_object):
           var3 = stock_object.train_set.iloc[:,k]
           var4 = stock_object.train_set.iloc[:,l]
 
-          fig = stock_object.train_set.plot(kind = 'scatter', x = stock_object.train_set.columns[i], y = stock_object.train_set.columns[j], alpha = 0.4, s = var3, label = var3.name, c = var4, cmap = plt.get_cmap('jet'), colorbar = True)
+          ax = stock_object.train_set.plot.scatter(x = stock_object.train_set.columns[i], y = stock_object.train_set.columns[j], c = stock_object.train_set.columns[l], colormap = 'viridis')
           plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/heat_scatter_' + var1.name + '_' + var2.name + '_' + var3.name + '_' + var4.name + '.pdf')
           plt.close('all')
 
