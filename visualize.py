@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, math
 import pandas as pd
 import numpy as np
 import argparse
@@ -6,6 +6,8 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from pathlib import Path
 from pylab import *
+from pandas.plotting import scatter_matrix
+import seaborn as sns
 from classes import *
 
 
@@ -120,6 +122,91 @@ def make_scatter_heat_plots(stock_object):
           plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/heat_scatter_' + var1.name + '_' + var2.name + '_' + var3.name + '_' + var4.name + '.pdf')
           plt.close('all')
 
+def make_correlation_plots(stock_object):
+  #simple correlation plot
+  corr = stock_object.train_set.corr()
+  axes = scatter_matrix(stock_object.train_set[['Date', 'Volume', 'Open', 'High', 'Low', 'Close']], alpha = 0.2)
+  for i, j in zip(*plt.np.triu_indices_from(axes, k=1)):
+    axes[i,j].annotate("%.3f" %corr.iloc[i][j], (0.8, 0.8), xycoords = 'axes fraction', ha = 'center', va = 'center')
+  plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/correlations_simple.pdf')
+  plt.close('all')
+
+  #heatmap correlation plot
+  ax = sns.heatmap(corr, vmin = -1, vmax = 1, center = 0, square = True)
+  ax.set_xticklabels(ax.get_xticklabels(), rotation = 45, horizontalalignment = 'right')
+  plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/correlations_heatmap.pdf')
+
+  #heatmap with variable box size plot
+  corr = pd.melt(corr.reset_index(), id_vars = 'index')
+  corr.columns = ['x', 'y', 'value']
+  make_complex_heatmap(corr['x'], corr['y'], size = corr['value'].abs())
+  
+
+def make_complex_heatmap(x, y, size):
+  fig, ax = plt.subplots()
+
+  #Map from column names to integer coordinates
+  x_labels = [v for v in sorted(x.unique())]
+  y_labels = [v for v in sorted(y.unique())]
+  x_to_num = {p[1]:p[0] for p in enumerate(x_labels)}
+  y_to_num = {p[1]:p[0] for p in enumerate(y_labels)}
+
+  size_scale = 500
+
+  palette = sns.diverging_palette(args.pal_min, args.pal_max, n = args.n_colors)
+
+  plot_grid = plt.GridSpec(1, 15, hspace=0.2, wspace=0.1) # Setup a 1x15 grid
+  ax = plt.subplot(plot_grid[:,:-1]) # Use the leftmost 14 columns of the grid for the main plot
+
+  ax.scatter(x = x.map(x_to_num), y = y.map(y_to_num), s = size * size_scale, c = size.apply(value_to_color) , marker = 's')
+
+  ax.set_xticks([x_to_num[v] for v in x_labels])
+  ax.set_xticklabels(x_labels, rotation = 45, horizontalalignment = 'right')
+  ax.set_yticks([y_to_num[v] for v in y_labels])
+  ax.set_yticklabels(y_labels)
+
+  ax.grid(False, 'major')
+  ax.grid(True, 'minor')
+  ax.set_xticks([t + 0.5 for t in ax.get_xticks()], minor = True)
+  ax.set_yticks([t + 0.5 for t in ax.get_yticks()], minor = True)
+  ax.set_xlim([-0.5, max([v for v in x_to_num.values()]) + 0.5])
+  ax.set_ylim([-0.5, max([v for v in y_to_num.values()]) + 0.5])
+
+  # Add color legend on the right side of the plot
+  ax = plt.subplot(plot_grid[:,-1]) # Use the rightmost column of the plot
+
+  col_x = [0]*len(palette) # Fixed x coordinate for the bars
+  bar_y=np.linspace(args.color_min, args.color_max, args.n_colors) # y coordinates for each of the n_colors bars
+
+  bar_height = bar_y[1] - bar_y[0]
+  ax.barh(
+      y=bar_y,
+      width=[5]*len(palette), # Make bars 5 units wide
+      left=col_x, # Make bars start at 0
+      height=bar_height,
+      color=palette,
+      linewidth=0
+  )
+  ax.set_xlim(1, 2) # Bars are going from 0 to 5, so lets crop the plot somewhere in the middle
+  ax.grid(False) # Hide grid
+  ax.set_facecolor('white') # Make background white
+  ax.set_xticks([]) # Remove horizontal ticks
+  ax.set_yticks(np.linspace(min(bar_y), max(bar_y), 3)) # Show vertical ticks for min, middle and max
+  ax.yaxis.tick_right() # Show vertical ticks on the right
+
+  plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/correlations_heatmap_fancy.pdf')
+ 
+
+def value_to_color(val):
+  palette = sns.diverging_palette(args.pal_min, args.pal_max, n = args.n_colors)
+  if math.isnan(val):
+    val = 0
+  val_position = float((val - args.color_min))/(args.color_max - args.color_min) 
+  ind = int(val_position * (args.n_colors - 1))
+  palette_ind = palette[ind]
+
+  return palette_ind
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description = 'arg parser for visualize.py')
   parser.add_argument('-f', '--file_name', type = str, help = 'input file')
@@ -129,6 +216,11 @@ if __name__ == '__main__':
   parser.add_argument('-d', '--date_name', type = str, dest = 'date_name', default = 'Date', help = 'name of Date variable in dataset')
   parser.add_argument('-vol', '--volume_name', type = str, dest = 'volume_name', default = 'Volume', help = 'name of Volume variable in dataset')
   parser.add_argument('-open_int', '--open_int_name', type = str, dest = 'open_int_name', default = 'OpenInt', help = 'name of OpenInt variable in dataset')
+  parser.add_argument('-ncol', '--number_of_colors', type = int, dest = 'n_colors', default = 256, help = 'number of colors used in heatmaps')
+  parser.add_argument('-colmin', '--minimum_color_value', type = int, dest = 'color_min', default = -1, help = 'minimum value of color map used in heatmaps')
+  parser.add_argument('-colmax', '--maximum_color_value', type = int, dest = 'color_max', default = 1, help = 'maximum value of color map used in heatmaps')
+  parser.add_argument('-palmin', '--minimum_pal_value', type = int, dest = 'pal_min', default = 20, help = 'minimum palette color value used in heatmaps')
+  parser.add_argument('-palmax', '--maximum_pal_value', type = int, dest = 'pal_max', default = 220, help = 'maximum palette color value used in heatmaps')
   args = parser.parse_args()
 
   make_output_dir(args.output_dir)
@@ -141,3 +233,4 @@ if __name__ == '__main__':
   make_time_dependent_plots(stock_object)
   make_scatter_plots(stock_object)
   make_scatter_heat_plots(stock_object)
+  make_correlation_plots(stock_object)
