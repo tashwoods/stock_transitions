@@ -177,8 +177,8 @@ def make_complex_heatmap(x, y, size):
 
   col_x = [0]*len(palette) # Fixed x coordinate for the bars
   bar_y=np.linspace(args.color_min, args.color_max, args.n_colors) # y coordinates for each of the n_colors bars
-
   bar_height = bar_y[1] - bar_y[0]
+  print('bar height: {}'.format(bar_height))
   ax.barh(
       y=bar_y,
       width=[5]*len(palette), # Make bars 5 units wide
@@ -188,6 +188,7 @@ def make_complex_heatmap(x, y, size):
       linewidth=0
   )
   ax.set_xlim(1, 2) # Bars are going from 0 to 5, so lets crop the plot somewhere in the middle
+  ax.set_ylim(-1,1)
   ax.grid(False) # Hide grid
   ax.set_facecolor('white') # Make background white
   ax.set_xticks([]) # Remove horizontal ticks
