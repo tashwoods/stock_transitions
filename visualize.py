@@ -36,7 +36,10 @@ def make_test_train_datasets(file_name):
   
 def get_stock_name(file_name):
   if file_name.endswith('.us.txt'):
-    file_name=file_name[:-7].upper()
+    if '/' in file_name:
+      file_name=file_name[file_name.rfind('/'):-7].upper()
+    else:
+      file_name=file_name[:-7].upper()
   return file_name
 
 def get_data(file_name):
@@ -74,9 +77,9 @@ def make_nested_dir(output_dir, nested_dir):
 
 def make_histograms(stock_object):
   for var in stock_object.train_set:
-
     ax = stock_object.train_set.hist(column = var) 
     fig = ax[0][0].get_figure()
+    ax[0][0].set_xlim(stock_object.train_set[var].min(), stock_object.train_set[var].max())
     var_stats = str(stock_object.train_set[var].describe())
     var_stats = var_stats[:var_stats.find('Name')]
     fig.text(0.7,0.5,str(var_stats))
@@ -173,24 +176,17 @@ def make_complex_heatmap(x, y, size):
   ax.set_ylim([-0.5, max([v for v in y_to_num.values()]) + 0.5])
 
   # Add color legend on the right side of the plot
-  ax = plt.subplot(plot_grid[:,-1]) # Use the rightmost column of the plot
-
-  col_x = [0]*len(palette) # Fixed x coordinate for the bars
-  bar_y=np.linspace(args.color_min, args.color_max, args.n_colors) # y coordinates for each of the n_colors bars
+  ax = plt.subplot(plot_grid[:,-1]) 
+  col_x = [0]*len(palette) 
+  bar_y=np.linspace(args.color_min, args.color_max, args.n_colors)
   bar_height = bar_y[1] - bar_y[0]
-  print('bar height: {}'.format(bar_height))
-  ax.barh(
-      y=bar_y,
-      width=[5]*len(palette), # Make bars 5 units wide
-      left=col_x, # Make bars start at 0
-      height=bar_height,
-      color=palette,
-      linewidth=0
-  )
-  ax.set_xlim(1, 2) # Bars are going from 0 to 5, so lets crop the plot somewhere in the middle
+  ax.barh(y=bar_y,width=[5]*len(palette),height=bar_height,color=palette,linewidth=0)
+  ax.set_xlim(1, 2) 
   ax.set_ylim(-1,1)
-  ax.grid(False) # Hide grid
-  ax.set_facecolor('white') # Make background white
+  ax.grid(False) 
+  ax.set_facecolor('white')
+
+  #Adjust ticks on correlation plot
   ax.set_xticks([]) # Remove horizontal ticks
   ax.set_yticks(np.linspace(min(bar_y), max(bar_y), 3)) # Show vertical ticks for min, middle and max
   ax.yaxis.tick_right() # Show vertical ticks on the right
@@ -210,7 +206,7 @@ def value_to_color(val):
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description = 'arg parser for visualize.py')
-  parser.add_argument('-f', '--file_name', type = str, help = 'input file')
+  parser.add_argument('-f', '--input_file', type = str, help = 'text file with input file names')
   parser.add_argument('-v', '--verbose', dest = 'verbose', action = 'count', default = 0, help = 'Enable verbose output (not default). Add more vs for more output.')
   parser.add_argument('-t', '--test_size', type = float, dest = 'test_size', default = 0.2, help = 'Size of test set')
   parser.add_argument('-o', '--output_dir', type = str, dest = 'output_dir', default = 'output', help = 'name of output_dir')
@@ -226,12 +222,22 @@ if __name__ == '__main__':
 
   make_output_dir(args.output_dir)
 
-  make_nested_dir(args.output_dir, get_stock_name(args.file_name))
-  test_set,train_set = make_test_train_datasets(args.file_name)
-  stock_object = stock_object(args.file_name, get_stock_name(args.file_name), test_set, train_set)
-  make_histograms(stock_object)
-  make_overlay_plots(stock_object)
-  make_time_dependent_plots(stock_object)
-  make_scatter_plots(stock_object)
-  make_scatter_heat_plots(stock_object)
-  make_correlation_plots(stock_object)
+  input_file = open(args.input_file, "r")
+ 
+  stock_objects_list = list() 
+  for file_name in input_file:
+    file_name = file_name.rstrip()
+    make_nested_dir(args.output_dir, get_stock_name(file_name))
+    print('about to make training and test sets')
+    test_set,train_set = make_test_train_datasets(file_name)
+    print('about to make stock object')
+    stock_object = stock_object_class(file_name, get_stock_name(file_name), test_set, train_set)
+    print('about to make histograms')
+    make_histograms(stock_object)
+    make_overlay_plots(stock_object)
+    make_time_dependent_plots(stock_object)
+    make_scatter_plots(stock_object)
+    make_scatter_heat_plots(stock_object)
+    make_correlation_plots(stock_object)
+    
+    stock_objects_list.append(stock_object)
