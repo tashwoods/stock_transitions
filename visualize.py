@@ -1,4 +1,4 @@
-import sys, os, math
+import sys, os, math, shutil
 import pandas as pd
 import numpy as np
 import argparse
@@ -69,8 +69,14 @@ def make_output_dir(output_dir):
   if not os.path.exists(output_dir):
     os.makedirs(output_dir)
   else:
-    print('Exiting. Outputdir, {}, already exists. Delete, rename, or run something else ;)')
-    exit()
+    make_dir_again = input("Outputdir: {} already exists. Delete it (y/n)?".format(output_dir))
+    if make_dir_again == 'y':
+      shutil.rmtree(output_dir)
+      os.makedirs(output_dir)
+    else:
+      print('Delete/rename {} or run something else ;). Exiting.'.format(output_dir))
+      exit()
+    return
 
 def make_nested_dir(output_dir, nested_dir):
  Path(output_dir + '/' + nested_dir).mkdir(parents=True, exist_ok=True) 
