@@ -16,14 +16,14 @@ def make_test_train_datasets(file_name):
   print('-------------------------------------------------------')
   print('DATA FROM: {}'.format(file_name))
   formatted_data = get_data(file_name)
-
+  print(formatted_data)
   #Extract train and test set
   train_set, test_set = train_test_split(formatted_data, test_size = args.test_size, random_state = 42) 
 
   #Order train and test set by ascending date
   train_set = train_set.sort_values(by = args.date_name)
   test_set = test_set.sort_values(by = args.date_name)
-  if args.verbose > 0:
+  if args.verbose > 1:
     formatted_data.info()
     print('Head of entire dataset')
     print(formatted_data.head())
@@ -31,8 +31,8 @@ def make_test_train_datasets(file_name):
     print(train_set.info)
     print('Test dataset')
     print(test_set.info)
-
-    return test_set, train_set
+  
+  return test_set, train_set
   
 def get_stock_name(file_name):
   if file_name.endswith('.us.txt'):
@@ -226,16 +226,17 @@ if __name__ == '__main__':
  
   stock_objects_list = list() 
   for file_name in input_file:
+    print(file_name)
     file_name = file_name.rstrip()
+    if(os.stat(file_name).st_size) == 0:
+      print('{} is empty, skipping this file'.format(file_name))
+      continue
     make_nested_dir(args.output_dir, get_stock_name(file_name))
-    print('about to make training and test sets')
     test_set,train_set = make_test_train_datasets(file_name)
-    print('about to make stock object')
     stock_object = stock_object_class(file_name, get_stock_name(file_name), test_set, train_set)
-    print('about to make histograms')
-    make_histograms(stock_object)
+    #make_histograms(stock_object)
     make_overlay_plots(stock_object)
-    make_time_dependent_plots(stock_object)
+    #make_time_dependent_plots(stock_object)
     make_scatter_plots(stock_object)
     make_scatter_heat_plots(stock_object)
     make_correlation_plots(stock_object)
