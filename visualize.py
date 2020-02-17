@@ -1,14 +1,16 @@
-import sys, os, math, shutil
+import sys, os, math, shutil, time, argparse, matplotlib
 import pandas as pd
 import numpy as np
-import argparse
 from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
 from pathlib import Path
 from pylab import *
 from pandas.plotting import scatter_matrix
 import seaborn as sns
 from matplotlib.pyplot import cm
+import multiprocessing
+matplotlib.use("Agg") #disable python gui rocket in mac os dock
+import matplotlib.pyplot as plt
+
 from classes import *
 
 
@@ -81,6 +83,30 @@ def make_output_dir(output_dir):
 
 def make_nested_dir(output_dir, nested_dir):
  Path(output_dir + '/' + nested_dir).mkdir(parents=True, exist_ok=True) 
+
+def faster_make_histograms(stock_object):
+  for var in stock_object.train_set:
+    fig, ax = plt.subplots()
+    ax = stock_object.train_set.hist(column = var) 
+    canvas = FigureCanvas(fig)
+    canvas.print_figure(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
+    plt.close('all')
+   
+def multithread_plot(stock_object):
+  for var in stock_object.train_set:
+    p = multiprocessing.Process(target = plot, args = (var, stock_object.train_set))
+    p.start()
+
+def plot(var, dataset):
+  #fig, ax = plt.subplot()
+  dataset.hist(column = var)
+  plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
+  plt.close('all')
+
+def save_plot(var):
+  ax.hist(var)
+  fig.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
+  plt.close('all')
 
 def make_histograms(stock_object):
   for var in stock_object.train_set:
@@ -216,6 +242,7 @@ def value_to_color(val):
   return palette_ind
 
 if __name__ == '__main__':
+
   parser = argparse.ArgumentParser(description = 'arg parser for visualize.py')
   parser.add_argument('-f', '--input_file', type = str, help = 'text file with input file names')
   parser.add_argument('-v', '--verbose', dest = 'verbose', action = 'count', default = 0, help = 'Enable verbose output (not default). Add more vs for more output.')
@@ -229,11 +256,13 @@ if __name__ == '__main__':
   parser.add_argument('-colmax', '--maximum_color_value', type = int, dest = 'color_max', default = 1, help = 'maximum value of color map used in heatmaps')
   parser.add_argument('-palmin', '--minimum_pal_value', type = int, dest = 'pal_min', default = 20, help = 'minimum palette color value used in heatmaps')
   parser.add_argument('-palmax', '--maximum_pal_value', type = int, dest = 'pal_max', default = 220, help = 'maximum palette color value used in heatmaps')
-  parser.add_argument('-indiv_plots', '--indiv_plots', type = int, dest = 'indiv_plots', default = 0, help = 'set to one to have individual stock plots')
-  parser.add_argument('-overlay_stock_plots', '--overlay_stock_plots', type = int, dest = 'overlay_stock_plots', default = 1, help = 'set to one to have overlay stock plots')
+  parser.add_argument('-indiv_plots', '--indiv_plots', type = int, dest = 'indiv_plots', default = 1, help = 'set to one to have individual stock plots')
+  parser.add_argument('-overlay_stock_plots', '--overlay_stock_plots', type = int, dest = 'overlay_stock_plots', default = 0, help = 'set to one to have overlay stock plots')
   args = parser.parse_args()
 
   make_output_dir(args.output_dir)
+  start_time = time.time()
+  plt.ion()
 
   input_file = open(args.input_file, "r")
  
@@ -252,7 +281,6 @@ if __name__ == '__main__':
     stock_objects_list.append(stock_object)
     stock_objects_names.append(get_stock_name(file_name))
 
-
   if args.overlay_stock_plots == 1:
     #iterate over stock variables
     for var in stock_objects_list[0].train_set.columns:
@@ -267,13 +295,15 @@ if __name__ == '__main__':
       plt.savefig(args.output_dir + '/stock_' + var + '_overlay.pdf')    
       plt.close('all')
 
- 
-  if args.indiv_plots == 1:
-    make_histograms(stock_object)
-    make_overlay_plots(stock_object)
-    make_scatter_plots(stock_object)
-    make_scatter_heat_plots(stock_object)
-    make_correlation_plots(stock_object)
-    make_time_dependent_plots(stock_object)
+  for stock_object in stock_objects_list:
+    print('processing: {}'.format(stock_object.stock_name))
+    if args.indiv_plots == 1:
+      multithread_plot(stock_object)
+      #make_histograms(stock_object)
+      #make_overlay_plots(stock_object)
+      #make_scatter_plots(stock_object)
+      #make_scatter_heat_plots(stock_object)
+      #make_correlation_plots(stock_object)
+      #make_time_dependent_plots(stock_object)
 
-    
+  print('----- {} seconds ---'.format(time.time() - start_time))
