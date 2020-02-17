@@ -93,19 +93,23 @@ def faster_make_histograms(stock_object):
     plt.close('all')
    
 def multithread_plot(stock_object):
+  print('starting here')
+  print(multiprocessing.cpu_count())
   for var in stock_object.train_set:
-    p = multiprocessing.Process(target = plot, args = (var, stock_object.train_set))
+    p = multiprocessing.Process(target = make_hist, args = (var, stock_object.train_set))
     p.start()
 
-def plot(var, dataset):
-  #fig, ax = plt.subplot()
-  dataset.hist(column = var)
+def make_hist(var, dataset):
+  fig, ax = plt.subplots()
+  ax.hist(dataset[var])
+  #dataset.hist(column = var)
+  plt.xlabel(var)
+  plt.ylabel('Count')
+  plt.title(var + ' Histogram')
+  var_stats = str(dataset[var].describe())
+  var_stats = var_stats[:var_stats.find('Name')]
+  plt.text(0.75, 0.6, str(var_stats), transform = ax.transAxes)
   plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
-  plt.close('all')
-
-def save_plot(var):
-  ax.hist(var)
-  fig.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
   plt.close('all')
 
 def make_histograms(stock_object):
