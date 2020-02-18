@@ -10,6 +10,8 @@ from matplotlib.pyplot import cm
 import multiprocessing
 matplotlib.use("Agg") #disable python gui rocket in mac os dock
 import matplotlib.pyplot as plt
+from functools import partial
+
 
 from classes import *
 
@@ -92,36 +94,38 @@ def faster_make_histograms(stock_object):
     canvas.print_figure(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
     plt.close('all')
    
-def multithread_plot(stock_object):
-  print('starting here')
-  print(multiprocessing.cpu_count())
-  for var in stock_object.train_set:
-    p = multiprocessing.Process(target = make_hist, args = (var, stock_object.train_set))
-    p.start()
-
-def make_hist(var, dataset):
-  fig, ax = plt.subplots()
-  ax.hist(dataset[var])
-  #dataset.hist(column = var)
-  plt.xlabel(var)
-  plt.ylabel('Count')
-  plt.title(var + ' Histogram')
-  var_stats = str(dataset[var].describe())
-  var_stats = var_stats[:var_stats.find('Name')]
-  plt.text(0.75, 0.6, str(var_stats), transform = ax.transAxes)
-  plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
-  plt.close('all')
 
 def make_histograms(stock_object):
   for var in stock_object.train_set:
-    ax = stock_object.train_set.hist(column = var) 
-    fig = ax[0][0].get_figure()
-    ax[0][0].set_xlim(stock_object.train_set[var].min(), stock_object.train_set[var].max())
-    var_stats = str(stock_object.train_set[var].describe())
+    make_hist(var, stock_object.train_set)
+
+def multithread_plot(stock_object):
+  pool = multiprocessing.Pool(args.max_number_processes)
+  prod_x=partial(make_hist, dataset=stock_object.train_set) # prod_x has only one argument x (y is fixed to 10)
+  result_list = pool.map_async(prod_x, stock_object.train_set.columns)
+  pool.close()
+  pool.join()
+
+def make_hist(stock_object):
+  print('here')
+
+  dataset = stock_object.train_set
+  variables = list(stock_object.variables)
+  print(variables)
+  print('now here')
+  for var in variables:
+    print(var)
+    fig, ax = plt.subplots()
+    ax.hist(dataset[var])
+    plt.xlabel(var)
+    plt.ylabel('Count')
+    plt.title(var + ' Histogram')
+    var_stats = str(dataset[var].describe())
     var_stats = var_stats[:var_stats.find('Name')]
-    fig.text(0.7,0.5,str(var_stats))
-    fig.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
-  plt.close('all')
+    plt.text(0.75, 0.6, str(var_stats), transform = ax.transAxes)
+    plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
+    print('saved fig')
+    plt.close('all')
 
 def make_time_dependent_plots(stock_object):
   time_plots = list()
@@ -245,8 +249,24 @@ def value_to_color(val):
 
   return palette_ind
 
-if __name__ == '__main__':
+def worker_histograms(stock_object):
+  for var in stock_object.train_set.columns:
+    stock_object.make_histograms(var)
 
+def make_histograms(self, var, output_dir):
+  dataset = self.train_set
+  fig, ax = plt.subplots()
+  ax.hist(dataset[var])
+  plt.xlabel(var)
+  plt.ylabel('Count')
+  plt.title(var + ' Histogram')
+  var_stats = str(dataset[var].describe())
+  var_stats = var_stats[:var_stats.find('Name')]
+  plt.text(0.75, 0.6, str(var_stats), transform = ax.transAxes)
+  plt.savefig(output_dir + '/' + self.stock_name + '/' + var + '_hist.pdf')
+  plt.close('all')
+
+if __name__ == '__main__':
   parser = argparse.ArgumentParser(description = 'arg parser for visualize.py')
   parser.add_argument('-f', '--input_file', type = str, help = 'text file with input file names')
   parser.add_argument('-v', '--verbose', dest = 'verbose', action = 'count', default = 0, help = 'Enable verbose output (not default). Add more vs for more output.')
@@ -262,28 +282,46 @@ if __name__ == '__main__':
   parser.add_argument('-palmax', '--maximum_pal_value', type = int, dest = 'pal_max', default = 220, help = 'maximum palette color value used in heatmaps')
   parser.add_argument('-indiv_plots', '--indiv_plots', type = int, dest = 'indiv_plots', default = 1, help = 'set to one to have individual stock plots')
   parser.add_argument('-overlay_stock_plots', '--overlay_stock_plots', type = int, dest = 'overlay_stock_plots', default = 0, help = 'set to one to have overlay stock plots')
+  parser.add_argument('-max_number_processes', '--max_number_processes', type = int, dest = 'max_number_processes', default = multiprocessing.cpu_count(), help = 'maximum number of processes allowed to run')
   args = parser.parse_args()
 
   make_output_dir(args.output_dir)
   start_time = time.time()
-  plt.ion()
-
   input_file = open(args.input_file, "r")
  
   stock_objects_list = list() 
   stock_objects_names = list() 
 
   for file_name in input_file:
-    print(file_name)
     file_name = file_name.rstrip()
     if(os.stat(file_name).st_size) == 0:
       print('{} is empty, skipping this file'.format(file_name))
       continue
     make_nested_dir(args.output_dir, get_stock_name(file_name))
     test_set,train_set = make_test_train_datasets(file_name)
-    stock_object = stock_object_class(file_name, get_stock_name(file_name), test_set, train_set)
-    stock_objects_list.append(stock_object)
+    stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set, train_set, args.output_dir))
     stock_objects_names.append(get_stock_name(file_name))
+
+  if args.indiv_plots == 1:
+    setting = 1
+
+    if setting == 0: #multithread at object level
+      pool = multiprocessing.Pool(args.max_number_processes)
+      result_list = pool.map_async(worker_histograms, stock_objects_list)
+      pool.close()
+      pool.join()
+
+
+    if setting == 1: #multithread tasks for a given object
+      for stock_object in stock_objects_list:
+        print('processing: {}'.format(stock_object.stock_name))
+        multithread_plot(stock_object)
+        #make_histograms(stock_object)
+        #make_overlay_plots(stock_object)
+        #make_scatter_plots(stock_object)
+        #make_scatter_heat_plots(stock_object)
+        #make_correlation_plots(stock_object)
+        #make_time_dependent_plots(stock_object)
 
   if args.overlay_stock_plots == 1:
     #iterate over stock variables
@@ -299,15 +337,6 @@ if __name__ == '__main__':
       plt.savefig(args.output_dir + '/stock_' + var + '_overlay.pdf')    
       plt.close('all')
 
-  for stock_object in stock_objects_list:
-    print('processing: {}'.format(stock_object.stock_name))
-    if args.indiv_plots == 1:
-      multithread_plot(stock_object)
-      #make_histograms(stock_object)
-      #make_overlay_plots(stock_object)
-      #make_scatter_plots(stock_object)
-      #make_scatter_heat_plots(stock_object)
-      #make_correlation_plots(stock_object)
-      #make_time_dependent_plots(stock_object)
+
 
   print('----- {} seconds ---'.format(time.time() - start_time))
