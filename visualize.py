@@ -12,9 +12,7 @@ matplotlib.use("Agg") #disable python gui rocket in mac os dock
 import matplotlib.pyplot as plt
 from functools import partial
 
-
 from classes import *
-
 
 def make_test_train_datasets(file_name):
   #Check metadata of given stock
@@ -86,15 +84,6 @@ def make_output_dir(output_dir):
 def make_nested_dir(output_dir, nested_dir):
  Path(output_dir + '/' + nested_dir).mkdir(parents=True, exist_ok=True) 
 
-def faster_make_histograms(stock_object):
-  for var in stock_object.train_set:
-    fig, ax = plt.subplots()
-    ax = stock_object.train_set.hist(column = var) 
-    canvas = FigureCanvas(fig)
-    canvas.print_figure(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
-    plt.close('all')
-   
-
 def make_histograms(stock_object):
   for var in stock_object.train_set:
     make_hist(var, stock_object.train_set)
@@ -106,26 +95,17 @@ def multithread_plot(stock_object):
   pool.close()
   pool.join()
 
-def make_hist(stock_object):
-  print('here')
-
-  dataset = stock_object.train_set
-  variables = list(stock_object.variables)
-  print(variables)
-  print('now here')
-  for var in variables:
-    print(var)
-    fig, ax = plt.subplots()
-    ax.hist(dataset[var])
-    plt.xlabel(var)
-    plt.ylabel('Count')
-    plt.title(var + ' Histogram')
-    var_stats = str(dataset[var].describe())
-    var_stats = var_stats[:var_stats.find('Name')]
-    plt.text(0.75, 0.6, str(var_stats), transform = ax.transAxes)
-    plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
-    print('saved fig')
-    plt.close('all')
+def make_hist(var, dataset):
+  fig, ax = plt.subplots()
+  ax.hist(dataset[var])
+  plt.xlabel(var)
+  plt.ylabel('Count')
+  plt.title(var + ' Histogram')
+  var_stats = str(dataset[var].describe())
+  var_stats = var_stats[:var_stats.find('Name')]
+  plt.text(0.75, 0.6, str(var_stats), transform = ax.transAxes)
+  plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/' + var + '_hist.pdf')
+  plt.close('all')
 
 def make_time_dependent_plots(stock_object):
   time_plots = list()
@@ -138,14 +118,6 @@ def make_time_dependent_plots(stock_object):
   plt.close('all')
   return time_plots
   
-
-def make_overlay_plots(stock_object):
-  for var in stock_object.train_set.columns:
-    if var != args.date_name and var!= args.volume_name and var!= args.open_int_name:
-      plt.plot('Date', var, data = stock_object.train_set, markerfacecolor = 'blue', linewidth = 0.2)
-  plt.legend()
-  plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/stock_variables_overlay.pdf')
-
 def make_scatter_plots(stock_object):
   for i in range(len(stock_object.train_set.columns) - 1):
     for j in range(i+1, len(stock_object.train_set.columns) - 1):
@@ -252,6 +224,9 @@ def value_to_color(val):
 def worker_histograms(stock_object):
   for var in stock_object.train_set.columns:
     stock_object.make_histograms(var)
+  print('here')
+  stock_object.make_overlay_plot()
+  print('now here')
 
 def make_histograms(self, var, output_dir):
   dataset = self.train_set
@@ -299,11 +274,11 @@ if __name__ == '__main__':
       continue
     make_nested_dir(args.output_dir, get_stock_name(file_name))
     test_set,train_set = make_test_train_datasets(file_name)
-    stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set, train_set, args.output_dir))
+    stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set, train_set, args))
     stock_objects_names.append(get_stock_name(file_name))
 
   if args.indiv_plots == 1:
-    setting = 1
+    setting = 0 #0 multithreads at object level, 1 multithreads at task level
 
     if setting == 0: #multithread at object level
       pool = multiprocessing.Pool(args.max_number_processes)
