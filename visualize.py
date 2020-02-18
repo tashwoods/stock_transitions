@@ -118,29 +118,6 @@ def make_time_dependent_plots(stock_object):
   plt.close('all')
   return time_plots
   
-def make_scatter_plots(stock_object):
-  for i in range(len(stock_object.train_set.columns) - 1):
-    for j in range(i+1, len(stock_object.train_set.columns) - 1):
-      var1 = stock_object.train_set.iloc[:,i]
-      var2 = stock_object.train_set.iloc[:,j]
-
-      fig = stock_object.train_set.plot(kind = 'scatter', x = stock_object.train_set.columns[i], y = stock_object.train_set.columns[j], alpha = 0.1)
-      plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/scatter_' + var1.name + '_' + var2.name + '.pdf')
-      plt.close('all')
-
-def make_scatter_heat_plots(stock_object):
-  for i in range(len(stock_object.train_set.columns) - 1):
-    for j in range(i+1, len(stock_object.train_set.columns) - 1):
-      for k in range(j+1, len(stock_object.train_set.columns) - 1):
-        for l in range(k+1, len(stock_object.train_set.columns) - 1):
-          var1 = stock_object.train_set.iloc[:,i]
-          var2 = stock_object.train_set.iloc[:,j]
-          var3 = stock_object.train_set.iloc[:,k]
-          var4 = stock_object.train_set.iloc[:,l]
-
-          ax = stock_object.train_set.plot.scatter(x = stock_object.train_set.columns[i], y = stock_object.train_set.columns[j], c = stock_object.train_set.columns[l], colormap = 'viridis')
-          plt.savefig(args.output_dir + '/' + stock_object.stock_name + '/heat_scatter_' + var1.name + '_' + var2.name + '_' + var3.name + '_' + var4.name + '.pdf')
-          plt.close('all')
 
 def make_correlation_plots(stock_object):
   #simple correlation plot
@@ -221,12 +198,12 @@ def value_to_color(val):
 
   return palette_ind
 
-def worker_histograms(stock_object):
+def worker_plots(stock_object):
   for var in stock_object.train_set.columns:
     stock_object.make_histograms(var)
-  print('here')
   stock_object.make_overlay_plot()
-  print('now here')
+  stock_object.make_scatter_plots()
+  stock_object.make_scatter_heat_plots()
 
 def make_histograms(self, var, output_dir):
   dataset = self.train_set
@@ -282,10 +259,9 @@ if __name__ == '__main__':
 
     if setting == 0: #multithread at object level
       pool = multiprocessing.Pool(args.max_number_processes)
-      result_list = pool.map_async(worker_histograms, stock_objects_list)
+      result_list = pool.map_async(worker_plots, stock_objects_list)
       pool.close()
       pool.join()
-
 
     if setting == 1: #multithread tasks for a given object
       for stock_object in stock_objects_list:

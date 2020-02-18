@@ -28,5 +28,27 @@ class stock_object_class:
     plt.legend()
     plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/stock_variables_overlay.pdf')
 
-    
+  def make_scatter_plots(self):
+    for i in range(len(self.train_set.columns) - 1):
+      for j in range(i+1, len(self.train_set.columns) - 1):
+        var1 = self.train_set.iloc[:,i]
+        var2 = self.train_set.iloc[:,j]
+
+        fig = self.train_set.plot(kind = 'scatter', x = self.train_set.columns[i], y = self.train_set.columns[j], alpha = 0.1)
+        plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/scatter_' + var1.name + '_' + var2.name + '.pdf')
+        plt.close('all')
+      
+  def make_scatter_heat_plots(self):
+    for i in range(len(self.train_set.columns) - 1):
+      for j in range(i+1, len(self.train_set.columns) - 1):
+        for k in range(j+1, len(self.train_set.columns) - 1):
+          for l in range(k+1, len(self.train_set.columns) - 1):
+            var1 = self.train_set.iloc[:,i]
+            var2 = self.train_set.iloc[:,j]
+            var3 = self.train_set.iloc[:,k]
+            var4 = self.train_set.iloc[:,l]
+
+            ax = self.train_set.plot.scatter(x = self.train_set.columns[i], y = self.train_set.columns[j], c = self.train_set.columns[l], colormap = 'viridis')
+            plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/heat_scatter_' + var1.name + '_' + var2.name + '_' + var3.name + '_' + var4.name + '.pdf')
+            plt.close('all')
 
