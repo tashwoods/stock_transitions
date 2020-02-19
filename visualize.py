@@ -28,48 +28,41 @@ if __name__ == '__main__':
   parser.add_argument('-palmin', '--minimum_pal_value', type = int, dest = 'pal_min', default = 20, help = 'minimum palette color value used in heatmaps')
   parser.add_argument('-palmax', '--maximum_pal_value', type = int, dest = 'pal_max', default = 220, help = 'maximum palette color value used in heatmaps')
   parser.add_argument('-indiv_plots', '--indiv_plots', type = int, dest = 'indiv_plots', default = 1, help = 'set to one to have individual stock plots')
-  parser.add_argument('-overlay_stock_plots', '--overlay_stock_plots', type = int, dest = 'overlay_stock_plots', default = 0, help = 'set to one to have overlay stock plots')
+  parser.add_argument('-overlay_stock_plots', '--overlay_stock_plots', type = int, dest = 'overlay_stock_plots', default = 1, help = 'set to one to have overlay stock plots')
   parser.add_argument('-max_number_processes', '--max_number_processes', type = int, dest = 'max_number_processes', default = multiprocessing.cpu_count(), help = 'maximum number of processes allowed to run')
   parser.add_argument('-N', '--number_files', type = int, dest = 'number_files', default = -1, help = 'number of files to randomly select from input file, if not specified or -1 all inputs files in input text file will be used')
+  parser.add_argument('-min_file_size', '--min_file_size', type = int, dest = 'min_file_size', default = 500, help = 'minimum stock file size that will be used. This helps ignore empty files or files with few datapoints')
   args = parser.parse_args()
 
 
   #Organize and format input and output
   make_output_dir(args.output_dir)
   start_time = time.time()
-
  
   stock_objects_list = list() 
   stock_objects_names = list() 
 
-  number_available_files = sum(1 for line in open(args.input_file)) - 1
-  print('num available files: {}'.format(number_available_files))
-
-
-
   input_file = open(args.input_file, "r")
 
-  if args.number_files != -1:
-    print('selecting {} random files from {} input files'.format(args.number_files, number_available_files))
-
+  available_files = []
   for file_name in input_file:
-    keepline = True
-    if args.number_files != -1:
-      this_random = stock_random.uniform(0,1)
-      if(this_random >= args.number_files/number_available_files):
-        keepline = False
-    if keepline:
-      file_name = file_name.rstrip()
-      print(os.stat(file_name).st_size)
-      if(os.stat(file_name).st_size) < 300000: #ignorning files with less than ~5 entries, as they are unlikely to be informative
-        print('{} is empty, skipping this file'.format(file_name))
-        continue
+    file_name = file_name.rstrip()
+    if(os.stat(file_name).st_size > args.min_file_size): #ignorning files with less than ~5 entries, as they are unlikely to be informative
+      available_files.append(file_name)
 
-      make_nested_dir(args.output_dir, get_stock_name(file_name))
-      test_set,train_set = make_test_train_datasets(file_name, args.test_size, args.date_name)
-      stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set, train_set, args))
-      stock_objects_names.append(get_stock_name(file_name))
-      print('number of items actually selected: {}'.format(len(stock_objects_list)))
+  print('selecting {} random files from {} input files'.format(args.number_files, len(available_files)))
+
+  if args.number_files != -1:
+    available_files = stock_random.sample(available_files, args.number_files)
+ 
+  for file_name in available_files:
+    file_name = file_name.rstrip()
+    make_nested_dir(args.output_dir, get_stock_name(file_name))
+    test_set,train_set = make_test_train_datasets(file_name, args.test_size, args.date_name)
+    stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set, train_set, args))
+    stock_objects_names.append(get_stock_name(file_name))
+
+  print('number of items actually selected: {}'.format(len(stock_objects_list)))
 
 
   #Plot data
