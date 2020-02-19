@@ -56,14 +56,12 @@ if __name__ == '__main__':
     keepline = True
     if args.number_files != -1:
       this_random = stock_random.uniform(0,1)
-      print(this_random)
-      print(args.number_files/number_available_files)
       if(this_random >= args.number_files/number_available_files):
         keepline = False
-    print(keepline)
     if keepline:
       file_name = file_name.rstrip()
-      if(os.stat(file_name).st_size) == 0:
+      print(os.stat(file_name).st_size)
+      if(os.stat(file_name).st_size) < 300000: #ignorning files with less than ~5 entries, as they are unlikely to be informative
         print('{} is empty, skipping this file'.format(file_name))
         continue
 
