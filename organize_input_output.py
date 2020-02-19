@@ -1,12 +1,12 @@
 from imported_libraries import *
 from classes import *
 
+
 def make_test_train_datasets(file_name, test_size, date_name):
   #Check metadata of given stock
   print('-------------------------------------------------------')
   print('DATA FROM: {}'.format(file_name))
   formatted_data = get_data(file_name, date_name)
-  print(formatted_data)
   #Extract train and test set
   train_set, test_set = train_test_split(formatted_data, test_size = test_size, random_state = 42) 
 
