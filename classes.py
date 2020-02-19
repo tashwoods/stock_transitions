@@ -14,7 +14,7 @@ class stock_object_class:
     ax.hist(dataset[var])
     plt.xlabel(var)
     plt.ylabel('Count')
-    plt.title(var + ' Histogram')
+    plt.title(self.stock_name + ': ' + var + ' Histogram')
     var_stats = str(dataset[var].describe())
     var_stats = var_stats[:var_stats.find('Name')]
     plt.text(0.75, 0.6, str(var_stats), transform = ax.transAxes)
@@ -25,6 +25,7 @@ class stock_object_class:
     for var in self.train_set.columns:
       if var != self.input_args.date_name and var!= self.input_args.volume_name and var!= self.input_args.open_int_name:
         plt.plot(self.input_args.date_name, var, data = self.train_set, linewidth = 0.2)
+        plt.title(self.stock_name + ': Stock Variables Overlay')
     plt.legend()
     plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/stock_variables_overlay.pdf')
 
@@ -35,6 +36,7 @@ class stock_object_class:
         var2 = self.train_set.iloc[:,j]
 
         fig = self.train_set.plot(kind = 'scatter', x = self.train_set.columns[i], y = self.train_set.columns[j], alpha = 0.1)
+        plt.title(self.stock_name)
         plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/scatter_' + var1.name + '_' + var2.name + '.pdf')
         plt.close('all')
       
@@ -48,14 +50,14 @@ class stock_object_class:
             var3 = self.train_set.iloc[:,k]
             var4 = self.train_set.iloc[:,l]
 
-            ax = self.train_set.plot.scatter(x = self.train_set.columns[i], y = self.train_set.columns[j], c = self.train_set.columns[l], colormap = 'viridis')
+            ax = self.train_set.plot.scatter(x = self.train_set.columns[i], y = self.train_set.columns[j], c = self.train_set.columns[l], colormap = 'viridis', alpha = 0.1)
+            plt.title(self.stock_name + ': Heat Scatter Plot')
             plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/heat_scatter_' + var1.name + '_' + var2.name + '_' + var3.name + '_' + var4.name + '.pdf')
             plt.close('all')
 
   def make_correlation_plots(self):
     def make_complex_heatmap(x, y, size):
       fig, ax = plt.subplots()
-
       #Map from column names to integer coordinates
       x_labels = [v for v in sorted(x.unique())]
       y_labels = [v for v in sorted(y.unique())]
@@ -98,7 +100,7 @@ class stock_object_class:
       ax.set_xticks([]) # Remove horizontal ticks
       ax.set_yticks(np.linspace(min(bar_y), max(bar_y), 3)) # Show vertical ticks for min, middle and max
       ax.yaxis.tick_right() # Show vertical ticks on the right
-
+      plt.title(self.stock_name + ': Correlations') 
       plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/correlations_heatmap_fancy.pdf')
      
 
@@ -115,30 +117,30 @@ class stock_object_class:
     #simple correlation plot
     corr = self.train_set.corr()
     axes = scatter_matrix(self.train_set[['Date', 'Volume', 'Open', 'High', 'Low', 'Close']], alpha = 0.2)
+    plt.suptitle(self.stock_name + ': Correlations')
     for i, j in zip(*plt.np.triu_indices_from(axes, k=1)):
-      axes[i,j].annotate("%.3f" %corr.iloc[i][j], (0.8, 0.8), xycoords = 'axes fraction', ha = 'center', va = 'center')
+      axes[i,j].annotate("%.3f" %corr.iloc[i][j], (0.7, 0.8), xycoords = 'axes fraction', ha = 'center', va = 'center')
     plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/correlations_simple.pdf')
     plt.close('all')
 
     #heatmap correlation plot
-    ax = sns.heatmap(corr, vmin = -1, vmax = 1, center = 0, square = True)
-    ax.set_xticklabels(ax.get_xticklabels(), rotation = 45, horizontalalignment = 'right')
-    plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/correlations_heatmap.pdf')
+    #ax = sns.heatmap(corr, vmin = -1, vmax = 1, center = 0, square = True)
+    #ax.set_xticklabels(ax.get_xticklabels(), rotation = 45, horizontalalignment = 'right')
+    #plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/correlations_heatmap.pdf')
 
     #heatmap with variable box size plot
     corr = pd.melt(corr.reset_index(), id_vars = 'index')
     corr.columns = ['x', 'y', 'value']
     make_complex_heatmap(corr['x'], corr['y'], size = corr['value'].abs())
-    
 
-
-def make_time_dependent_plots(self):
-  time_plots = list()
-  for var in self.train_set.columns:
-    if var != args.date_name:
-      ax = time_plots.append(self.train_set.plot(x = args.date_name, y = var))
-      plt.xlabel('Date')
-      plt.ylabel(var)
-      plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/' + var + '_time.pdf')
-  plt.close('all')
-  return time_plots
+  def make_time_dependent_plots(self):
+    time_plots = list()
+    for var in self.train_set.columns:
+      if var != self.input_args.date_name:
+        ax = time_plots.append(self.train_set.plot(x = self.input_args.date_name, y = var))
+        plt.xlabel('Date')
+        plt.ylabel(var)
+        plt.title(self.stock_name + ': ' + var + ' vs. Time')
+        plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/' + var + '_time.pdf')
+    plt.close('all')
+    return time_plots
