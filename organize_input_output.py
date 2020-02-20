@@ -2,17 +2,21 @@ from imported_libraries import *
 from classes import *
 
 
-def make_test_train_datasets(file_name, test_size, date_name):
+def make_test_train_datasets(file_name, args):
   #Check metadata of given stock
   print('-------------------------------------------------------')
   print('DATA FROM: {}'.format(file_name))
-  formatted_data = get_data(file_name, date_name)
+  formatted_data = get_data(file_name, args.date_name)
+  if args.drop_columns != []:
+    for column in args.drop_columns:
+      formatted_data = formatted_data.drop(columns = column)
+  print(formatted_data)
   #Extract train and test set
-  train_set, test_set = train_test_split(formatted_data, test_size = test_size, random_state = 42) 
+  train_set, test_set = train_test_split(formatted_data, test_size = args.test_size, random_state = 42) 
 
   #Order train and test set by ascending date
-  train_set = train_set.sort_values(by = date_name)
-  test_set = test_set.sort_values(by = date_name)
+  train_set = train_set.sort_values(by = args.date_name)
+  test_set = test_set.sort_values(by = args.date_name)
 
   return test_set, train_set
   
