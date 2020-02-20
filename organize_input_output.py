@@ -7,9 +7,7 @@ def make_test_train_datasets(file_name, args):
   print('-------------------------------------------------------')
   print('DATA FROM: {}'.format(file_name))
   formatted_data = get_data(file_name, args.date_name)
-  if args.drop_columns != []:
-    for column in args.drop_columns:
-      formatted_data = formatted_data.drop(columns = column)
+  formatted_data = formatted_data.drop(args.drop_columns, axis = 1)
   print(formatted_data)
   #Extract train and test set
   train_set, test_set = train_test_split(formatted_data, test_size = args.test_size, random_state = 42) 
