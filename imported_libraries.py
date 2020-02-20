@@ -12,3 +12,8 @@ import multiprocessing
 matplotlib.use("Agg") #disable python gui rocket in mac os dock
 import matplotlib.pyplot as plt
 from functools import partial
+from sklearn.base import BaseEstimator, TransformerMixin #for attribute adder
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from classes import *
+from organize_input_output import *

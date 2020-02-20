@@ -1,6 +1,4 @@
 from imported_libraries import *
-from classes import *
-from organize_input_output import *
 
 def worker_plots(stock_object):
   stock_object.make_overlay_plot()
@@ -22,6 +20,10 @@ if __name__ == '__main__':
   parser.add_argument('-d', '--date_name', type = str, dest = 'date_name', default = 'Date', help = 'name of Date variable in dataset')
   parser.add_argument('-vol', '--volume_name', type = str, dest = 'volume_name', default = 'Volume', help = 'name of Volume variable in dataset')
   parser.add_argument('-open_int', '--open_int_name', type = str, dest = 'open_int_name', default = 'OpenInt', help = 'name of OpenInt variable in dataset')
+  parser.add_argument('-open', '--open_name', type = str, dest = 'open_name', default = 'Open', help = 'name of Open variable in dataset')
+  parser.add_argument('-close', '--close_name', type = str, dest = 'close_name', default = 'Close', help = 'name of Close variable in dataset')
+  parser.add_argument('-low', '--low_name', type = str, dest = 'low_name', default = 'Low', help = 'name of Low variable in dataset')
+  parser.add_argument('-high', '--high_name', type = str, dest = 'high_name', default = 'High', help = 'name of High variable in dataset')
   parser.add_argument('-ncol', '--number_of_colors', type = int, dest = 'n_colors', default = 256, help = 'number of colors used in heatmaps')
   parser.add_argument('-colmin', '--minimum_color_value', type = int, dest = 'color_min', default = -1, help = 'minimum value of color map used in heatmaps')
   parser.add_argument('-colmax', '--maximum_color_value', type = int, dest = 'color_max', default = 1, help = 'maximum value of color map used in heatmaps')
