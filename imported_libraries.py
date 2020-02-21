@@ -15,5 +15,7 @@ from functools import partial
 from sklearn.base import BaseEstimator, TransformerMixin #for attribute adder
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+import statsmodels.api as sm
+
 from classes import *
 from organize_input_output import *

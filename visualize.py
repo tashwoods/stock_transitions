@@ -6,6 +6,36 @@ def worker_plots(stock_object):
   stock_object.make_correlation_plots()
   stock_object.make_time_dependent_plots()
 
+
+def predict_stocks(stock_object):
+  date = stock_object.train_set[stock_object.input_args.date_name]
+  open_price = stock_object.train_set[stock_object.input_args.predict_var]
+
+  open_price = sm.add_constant(open_price) #add intercept to model 
+  model = sm.OLS(date, open_price).fit()
+  predictions = model.predict(open_price) 
+  const, slope = model.params
+
+  print(model.summary())
+
+
+  plt.plot(stock_object.input_args.date_name, stock_object.input_args.predict_var, data = stock_object.train_set, markerfacecolor = 'blue', linewidth = 0.4, label = stock_object.stock_name)
+
+
+  date_min = stock_object.train_set[stock_object.input_args.date_name].min()
+  date_max = stock_object.train_set[stock_object.input_args.date_name].max()
+  x = np.linspace(date_min, date_max)
+  y = np.arange(0,10)
+  print(y)
+  print(date_min)
+  print(date_max)
+  print(x)
+  plt.plot(x, slope*x + const, 'r-')
+  #plt.legend()
+  plt.xlabel(stock_object.input_args.date_name)
+  plt.ylabel(stock_object.input_args.predict_var)
+  plt.savefig(stock_object.input_args.output_dir + '/stock_' + stock_object.stock_name + '_linreg_overlay.pdf')    
+  plt.close('all')
   #Extra plots
   #for var in stock_object.train_set.columns:
     #stock_object.make_histograms(var)
@@ -18,6 +48,7 @@ if __name__ == '__main__':
   parser.add_argument('-t', '--test_size', type = float, dest = 'test_size', default = 0.2, help = 'Size of test set')
   parser.add_argument('-o', '--output_dir', type = str, dest = 'output_dir', default = 'output', help = 'name of output_dir')
   parser.add_argument('-d', '--date_name', type = str, dest = 'date_name', default = 'Date', help = 'name of Date variable in dataset')
+  parser.add_argument('-p', '--predict_variable_name', type = str, dest = 'predict_var', default = 'Open', help = 'name of variable in dataset that will be modelled')
   parser.add_argument('-vol', '--volume_name', type = str, dest = 'volume_name', default = 'Volume', help = 'name of Volume variable in dataset')
   parser.add_argument('-open_int', '--open_int_name', type = str, dest = 'open_int_name', default = 'OpenInt', help = 'name of OpenInt variable in dataset')
   parser.add_argument('-open', '--open_name', type = str, dest = 'open_name', default = 'Open', help = 'name of Open variable in dataset')
@@ -35,6 +66,9 @@ if __name__ == '__main__':
   parser.add_argument('-drop_columns', '--drop_columns', nargs = '*', dest = 'drop_columns', default = [], help = 'list of columns to exclude from dataset')
   parser.add_argument('-N', '--number_files', type = int, dest = 'number_files', default = -1, help = 'number of files to randomly select from input file, if not specified or -1 all inputs files in input text file will be used')
   parser.add_argument('-min_file_size', '--min_file_size', type = int, dest = 'min_file_size', default = 500, help = 'minimum stock file size that will be used. This helps ignore empty files or files with few datapoints')
+  parser.add_argument('-scale_features', '--scale_features', type = int, dest = 'scale_features', default = 0, help = 'set to one to scale features using StandardScaler(), 0 to not')
+  parser.add_argument('-combined_features', '--combined_features', type = int, dest = 'combined_features', default = 0, help = 'set to one to add combined features to dataset, zero to not')
+  parser.add_argument('-lin_reg', '--lin_reg', type = int, dest = 'lin_reg', default = 0, help = 'set to one to model stock open price with linear regression')
   args = parser.parse_args()
 
 
@@ -57,32 +91,41 @@ if __name__ == '__main__':
     print('selecting {} random files from {} input files'.format(args.number_files, len(available_files)))
     available_files = stock_random.sample(available_files, args.number_files)
  
-  for file_name in available_files:
+  for i in range(len(available_files)):
+    file_name = available_files[i]
     file_name = file_name.rstrip()
     make_nested_dir(args.output_dir, get_stock_name(file_name))
     test_set,train_set = make_test_train_datasets(file_name, args)
     stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set, train_set, args))
     stock_objects_names.append(get_stock_name(file_name))
+    if i % 100 == 0:
+      print('Datasets made for {} of {} files in {} seconds.'.format(i, len(available_files), time.time() - start_time))
+      
 
   print('number of items actually selected: {}'.format(len(stock_objects_list)))
 
 
-  #Plot data
+  #Plot Data
   if args.indiv_plots == 1:
     pool = multiprocessing.Pool(args.max_number_processes)
     result_list = pool.map_async(worker_plots, stock_objects_list)
     pool.close()
     pool.join()
 
+  #Model Data
+  for stock in stock_objects_list:
+    if args.lin_reg == 1:
+      predict_stocks(stock)
+  
   if args.overlay_stock_plots == 1:
     for var in stock_objects_list[0].train_set.columns: #iterate over stock variables
       color = cm.rainbow(np.linspace(0,1,len(stock_objects_list)))
       for stock,c in zip(range(len(stock_objects_list)), color): #iterate over stocks
         if var != args.date_name:
-          plt.plot('Date', var, data = stock_objects_list[stock].train_set, markerfacecolor = c, linewidth = 0.2, label = stock_objects_list[stock].stock_name)
-          plt.xlabel('Date')
-          plt.ylabel(var)
-      plt.legend()
+          plt.plot('Date', var, data = stock_objects_list[stock].train_set, markerfacecolor = c, linewidth = 0.4, label = stock_objects_list[stock].stock_name)
+      #plt.legend()
+      plt.xlabel('Date')
+      plt.ylabel(var)
       plt.savefig(args.output_dir + '/stock_' + var + '_overlay.pdf')    
       plt.close('all')
 

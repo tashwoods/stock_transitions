@@ -7,16 +7,15 @@ def add_attributes(dataset): #Natasha: make this less hardcoded and more dynamic
 
 def make_test_train_datasets(file_name, args):
   #Check metadata of given stock
-  print('-------------------------------------------------------')
-  print('DATA FROM: {}'.format(file_name))
+  print(file_name)
   formatted_data = get_data(file_name, args.date_name)
   formatted_data = formatted_data.drop(args.drop_columns, axis = 1)
-  formatted_data = add_attributes(formatted_data)
-  scaled_features = StandardScaler().fit_transform(formatted_data.values)
-  formatted_data = pd.DataFrame(scaled_features, index = formatted_data.index, columns = formatted_data.columns)
-  print(formatted_data)
 
-  corr_matrix = formatted_data.corr()
+  if args.combined_features == 1:
+    formatted_data = add_attributes(formatted_data)
+  if args.scale_features == 1:
+    scaled_features = StandardScaler().fit_transform(formatted_data.values)
+    formatted_data = pd.DataFrame(scaled_features, index = formatted_data.index, columns = formatted_data.columns)
   
   #Extract train and test set
   train_set, test_set = train_test_split(formatted_data, test_size = args.test_size, random_state = 42) 
