@@ -65,7 +65,7 @@ if __name__ == '__main__':
   parser.add_argument('-max_number_processes', '--max_number_processes', type = int, dest = 'max_number_processes', default = multiprocessing.cpu_count(), help = 'maximum number of processes allowed to run')
   parser.add_argument('-drop_columns', '--drop_columns', nargs = '*', dest = 'drop_columns', default = [], help = 'list of columns to exclude from dataset')
   parser.add_argument('-N', '--number_files', type = int, dest = 'number_files', default = -1, help = 'number of files to randomly select from input file, if not specified or -1 all inputs files in input text file will be used')
-  parser.add_argument('-min_file_size', '--min_file_size', type = int, dest = 'min_file_size', default = 500, help = 'minimum stock file size that will be used. This helps ignore empty files or files with few datapoints')
+  parser.add_argument('-min_file_size', '--min_file_size', type = int, dest = 'min_file_size', default = 100, help = 'minimum stock file size that will be used. This helps ignore empty files or files with few datapoints')
   parser.add_argument('-scale_features', '--scale_features', type = int, dest = 'scale_features', default = 0, help = 'set to one to scale features using StandardScaler(), 0 to not')
   parser.add_argument('-combined_features', '--combined_features', type = int, dest = 'combined_features', default = 0, help = 'set to one to add combined features to dataset, zero to not')
   parser.add_argument('-lin_reg', '--lin_reg', type = int, dest = 'lin_reg', default = 0, help = 'set to one to model stock open price with linear regression')

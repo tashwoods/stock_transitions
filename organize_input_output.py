@@ -9,7 +9,8 @@ def make_test_train_datasets(file_name, args):
   #Check metadata of given stock
   print(file_name)
   formatted_data = get_data(file_name, args.date_name)
-  formatted_data = formatted_data.drop(args.drop_columns, axis = 1)
+  if args.drop_columns in formatted_data:
+    formatted_data = formatted_data.drop(args.drop_columns, axis = 1)
 
   if args.combined_features == 1:
     formatted_data = add_attributes(formatted_data)
