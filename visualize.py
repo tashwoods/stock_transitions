@@ -68,6 +68,7 @@ if __name__ == '__main__':
   parser.add_argument('-min_file_size', '--min_file_size', type = int, dest = 'min_file_size', default = 100, help = 'minimum stock file size that will be used. This helps ignore empty files or files with few datapoints')
   parser.add_argument('-scale_features', '--scale_features', type = int, dest = 'scale_features', default = 0, help = 'set to one to scale features using StandardScaler(), 0 to not')
   parser.add_argument('-combined_features', '--combined_features', type = int, dest = 'combined_features', default = 0, help = 'set to one to add combined features to dataset, zero to not')
+  parser.add_argument('-anticipated_columns', '--anticipated_columns', type = str, dest = 'anticipated_columns', default = 'Date,Open,High,Low,Close,Volume,OpenInt', help = 'list of columns that are expected in text files')
   parser.add_argument('-lin_reg', '--lin_reg', type = int, dest = 'lin_reg', default = 0, help = 'set to one to model stock open price with linear regression')
   args = parser.parse_args()
 
@@ -83,9 +84,15 @@ if __name__ == '__main__':
 
   available_files = []
   for file_name in input_file:
-    file_name = file_name.rstrip()
-    if(os.stat(file_name).st_size > args.min_file_size): #ignorning files with less than ~5 entries, as they are unlikely to be informative
-      available_files.append(file_name)
+    if len(file_name.strip()) > 0:
+      file_name = file_name.rstrip()
+      if(os.stat(file_name).st_size > args.min_file_size): #ignorning files with less than ~5 entries, as they are unlikely to be informative
+        in_file = open(file_name, 'r')
+        first_line = in_file.readline().strip()
+        if first_line == args.anticipated_columns:
+          available_files.append(file_name)
+        else:
+          print('{} is missing some -anticipated_columns, skipping.'.format(file_name))
 
   if args.number_files != -1:
     print('selecting {} random files from {} input files'.format(args.number_files, len(available_files)))
@@ -96,14 +103,13 @@ if __name__ == '__main__':
     file_name = file_name.rstrip()
     make_nested_dir(args.output_dir, get_stock_name(file_name))
     test_set,train_set = make_test_train_datasets(file_name, args)
-    stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set, train_set, args))
-    stock_objects_names.append(get_stock_name(file_name))
-    if i % 100 == 0:
-      print('Datasets made for {} of {} files in {} seconds.'.format(i, len(available_files), time.time() - start_time))
-      
+    if type(test_set) != None and type(train_set) != None:
+      stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set, train_set, args))
+      stock_objects_names.append(get_stock_name(file_name))
+      if i % 100 == 0:
+        print('Datasets made for {} of {} files in {} seconds.'.format(i, len(available_files), time.time() - start_time))
 
   print('number of items actually selected: {}'.format(len(stock_objects_list)))
-
 
   #Plot Data
   if args.indiv_plots == 1:

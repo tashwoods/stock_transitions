@@ -7,9 +7,8 @@ def add_attributes(dataset): #Natasha: make this less hardcoded and more dynamic
 
 def make_test_train_datasets(file_name, args):
   #Check metadata of given stock
-  print(file_name)
   formatted_data = get_data(file_name, args.date_name)
-  if args.drop_columns in formatted_data:
+  if len(args.drop_columns) > 0:
     formatted_data = formatted_data.drop(args.drop_columns, axis = 1)
 
   if args.combined_features == 1:
@@ -17,16 +16,16 @@ def make_test_train_datasets(file_name, args):
   if args.scale_features == 1:
     scaled_features = StandardScaler().fit_transform(formatted_data.values)
     formatted_data = pd.DataFrame(scaled_features, index = formatted_data.index, columns = formatted_data.columns)
-  
+
   #Extract train and test set
   train_set, test_set = train_test_split(formatted_data, test_size = args.test_size, random_state = 42) 
 
   #Order train and test set by ascending date
   train_set = train_set.sort_values(by = args.date_name)
   test_set = test_set.sort_values(by = args.date_name)
-
-  return test_set, train_set
   
+  return test_set, train_set
+
 def get_stock_name(file_name):
   if file_name.endswith('.us.txt'):
     if '/' in file_name:

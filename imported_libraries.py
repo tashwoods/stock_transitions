@@ -1,4 +1,4 @@
-import sys, os, math, shutil, time, argparse, matplotlib
+import sys, os, math, shutil, time, argparse, matplotlib, csv
 import random as stock_random
 import pandas as pd
 import numpy as np
