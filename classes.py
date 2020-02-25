@@ -1,11 +1,12 @@
 from imported_libraries import *
 
 class stock_object_class:
-  def __init__(self, file_name, stock_name, test_set, train_set, input_args):
+  def __init__(self, file_name, stock_name, test_set, train_set, year_test_set, input_args):
     self.file_name = file_name
     self.stock_name = stock_name
     self.test_set = test_set
     self.train_set = train_set
+    self.year_test_set = year_test_set
     self.input_args = input_args
 
   def make_histograms(self, var):

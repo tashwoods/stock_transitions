@@ -38,12 +38,15 @@ if __name__ == '__main__':
   parser.add_argument('-combined_features', '--combined_features', type = int, dest = 'combined_features', default = 0, help = 'set to one to add combined features to dataset, zero to not')
   parser.add_argument('-anticipated_columns', '--anticipated_columns', type = str, dest = 'anticipated_columns', default = 'Date,Open,High,Low,Close,Volume,OpenInt', help = 'list of columns that are expected in text files')
   parser.add_argument('-lin_reg', '--lin_reg', type = int, dest = 'lin_reg', default = 0, help = 'set to one to model stock open price with linear regression')
-  parser.add_argument('-min_year', '--min_year', type = int, dest = 'min_year', default = 2008, help = 'first year to require stock data for')
-  parser.add_argument('-max_year', '--max_year', type = int, dest = 'max_year', default = 2016, help = 'last year to require stock data for')
-  parser.add_argument('-min_month', '--min_month', type = int, dest = 'min_month', default = 1, help = 'month of the first year to require stock data for')
-  parser.add_argument('-max_month', '--max_month', type = int, dest = 'max_month', default = 1, help = 'month of the last year to require stock data for')
-  parser.add_argument('-year_test_set', '--year_test_set', type = int, dest = 'year_test_set', default = 2016, help = 'year to begin test set with')
-  parser.add_argument('-month_test_set', '--month_test_set', type = int, dest = 'month_test_set', default = 1, help = 'month to begin test set with')
+  parser.add_argument('-min_year', '--min_year', type = str, dest = 'min_year', default = '2008', help = 'first year to require stock data for')
+  parser.add_argument('-max_year', '--max_year', type = str, dest = 'max_year', default = '2016', help = 'last year to require stock data for')
+  parser.add_argument('-min_month', '--min_month', type = str, dest = 'min_month', default = '01', help = 'month of the first year to require stock data for')
+  parser.add_argument('-max_month', '--max_month', type = str, dest = 'max_month', default = '01', help = 'month of the last year to require stock data for')
+  parser.add_argument('-year_test_set', '--year_test_set', type = str, dest = 'year_test_set', default = '2016', help = 'year to begin test set with')
+  parser.add_argument('-month_test_set', '--month_test_set', type = str, dest = 'month_test_set', default = '01', help = 'month to begin test set with')
+  parser.add_argument('-day_test_set', '--day_test_set', type = str, dest = 'day_test_set', default = '01', help = 'day of month to begin test set with')
+  parser.add_argument('-days_in_week', '--days_in_week', type = int, dest = 'days_in_week', default = 7, help = 'days in week to use for weekly averging')
+  parser.add_argument('-days_in_month', '--days_in_month', type = int, dest = 'days_in_month', default = 30, help = 'days in month to use for month averging')
   args = parser.parse_args()
 
 
@@ -72,11 +75,11 @@ if __name__ == '__main__':
             first_line = [int(i) for i in first_line]
             last_line = [int(i) for i in last_line]
 
-            if first_line[0] < args.min_year or first_line[0] == args.min_year and first_line[1] == args.min_month: #require first date to be 01/08 or earlier
-              if last_line[0] > args.max_year or last_line[0] == args.max_year and last_line[1] == args.max_month: #require last date to be 10/16 or later
+            if first_line[0] < int(args.min_year) or first_line[0] == int(args.min_year) and first_line[1] == int(args.min_month): #require first date to be 01/08 or earlier
+              if last_line[0] > int(args.max_year) or last_line[0] == int(args.max_year) and last_line[1] == int(args.max_month): #require last date to be 10/16 or later
                 available_files.append(file_name)
-            #else:
-            #  print('{} does not have stock data from the minimum date range {}/{} - {}/{}'.format(file_name, args.min_month, args.min_year, args.max_month, args.max_year))
+            else:
+              print('{} does not have stock data from the minimum date range {}/{} - {}/{}'.format(file_name, args.min_month, args.min_year, args.max_month, args.max_year))
           else:
             print('{} is missing some -anticipated_columns, skipping.'.format(file_name))
 
@@ -88,9 +91,9 @@ if __name__ == '__main__':
     file_name = available_files[i]
     file_name = file_name.rstrip()
     make_nested_dir(args.output_dir, get_stock_name(file_name))
-    test_set,train_set = make_test_train_datasets(file_name, args)
+    test_set,train_set,year_test_set = make_test_train_datasets(file_name, args)
     if type(test_set) != None and type(train_set) != None:
-      stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set, train_set, args))
+      stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set, train_set, year_test_set, args))
       stock_objects_names.append(get_stock_name(file_name))
       if i % 100 == 0:
         print('Datasets made for {} of {} files in {} seconds.'.format(i, len(available_files), time.time() - start_time))
