@@ -7,39 +7,7 @@ def worker_plots(stock_object):
   stock_object.make_time_dependent_plots()
 
 
-def predict_stocks(stock_object):
-  date = stock_object.train_set[stock_object.input_args.date_name]
-  open_price = stock_object.train_set[stock_object.input_args.predict_var]
 
-  open_price = sm.add_constant(open_price) #add intercept to model 
-  model = sm.OLS(date, open_price).fit()
-  predictions = model.predict(open_price) 
-  const, slope = model.params
-
-  print(model.summary())
-
-
-  plt.plot(stock_object.input_args.date_name, stock_object.input_args.predict_var, data = stock_object.train_set, markerfacecolor = 'blue', linewidth = 0.4, label = stock_object.stock_name)
-
-
-  date_min = stock_object.train_set[stock_object.input_args.date_name].min()
-  date_max = stock_object.train_set[stock_object.input_args.date_name].max()
-  x = np.linspace(date_min, date_max)
-  y = np.arange(0,10)
-  print(y)
-  print(date_min)
-  print(date_max)
-  print(x)
-  plt.plot(x, slope*x + const, 'r-')
-  #plt.legend()
-  plt.xlabel(stock_object.input_args.date_name)
-  plt.ylabel(stock_object.input_args.predict_var)
-  plt.savefig(stock_object.input_args.output_dir + '/stock_' + stock_object.stock_name + '_linreg_overlay.pdf')    
-  plt.close('all')
-  #Extra plots
-  #for var in stock_object.train_set.columns:
-    #stock_object.make_histograms(var)
-  #stock_object.make_scatter_plots() #scatter plots without z axis coloring by third variable
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description = 'arg parser for visualize.py')
@@ -70,6 +38,9 @@ if __name__ == '__main__':
   parser.add_argument('-combined_features', '--combined_features', type = int, dest = 'combined_features', default = 0, help = 'set to one to add combined features to dataset, zero to not')
   parser.add_argument('-anticipated_columns', '--anticipated_columns', type = str, dest = 'anticipated_columns', default = 'Date,Open,High,Low,Close,Volume,OpenInt', help = 'list of columns that are expected in text files')
   parser.add_argument('-lin_reg', '--lin_reg', type = int, dest = 'lin_reg', default = 0, help = 'set to one to model stock open price with linear regression')
+  parser.add_argument('-min_year', '--min_year', type = int, dest = 'min_year', default = 2008, help = 'first year to require stock data for')
+  parser.add_argument('-max_year', '--max_year', type = int, dest = 'max_year', default = 2016, help = 'last year to require stock data for')
+  parser.add_argument('-min_month', '--min_month', type = int, dest = 'min_month', default = 1, help = 'first month of the year to require stock data for')
   args = parser.parse_args()
 
 
@@ -86,13 +57,25 @@ if __name__ == '__main__':
   for file_name in input_file:
     if len(file_name.strip()) > 0:
       file_name = file_name.rstrip()
-      if(os.stat(file_name).st_size > args.min_file_size): #ignorning files with less than ~5 entries, as they are unlikely to be informative
-        in_file = open(file_name, 'r')
-        first_line = in_file.readline().strip()
-        if first_line == args.anticipated_columns:
-          available_files.append(file_name)
-        else:
-          print('{} is missing some -anticipated_columns, skipping.'.format(file_name))
+      if(os.stat(file_name).st_size > args.min_file_size): #ignore files with less than ~5 entries, as they are unlikely to be informative
+        with open(file_name, 'r') as in_file:
+          lines = in_file.read().splitlines()
+          columns_line = lines[0]
+          first_line = lines[1]
+          last_line = lines[-1]
+          if columns_line == args.anticipated_columns: #ignore files with missing columns
+            first_line = first_line[:first_line.find(',')].split('-')
+            last_line = last_line[:last_line.find(',')].split('-')
+            first_line = [int(i) for i in first_line]
+            last_line = [int(i) for i in last_line]
+
+            if first_line[0] < args.min_year or first_line[0] == args.min_year and first_line[1] == args.min_month: #require first date to be 01/08 or earlier
+              if last_line[0] > args.max_year or last_line[0] == args.max_year and last_line[1] == args.min_month: #require last date to be 10/16 or later
+                available_files.append(file_name)
+            else:
+              print('{} does not have stock data from the minimum date range 01/08 to 10/16'.format(file_name))
+          else:
+            print('{} is missing some -anticipated_columns, skipping.'.format(file_name))
 
   if args.number_files != -1:
     print('selecting {} random files from {} input files'.format(args.number_files, len(available_files)))
