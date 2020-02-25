@@ -75,8 +75,8 @@ if __name__ == '__main__':
             if first_line[0] < args.min_year or first_line[0] == args.min_year and first_line[1] == args.min_month: #require first date to be 01/08 or earlier
               if last_line[0] > args.max_year or last_line[0] == args.max_year and last_line[1] == args.max_month: #require last date to be 10/16 or later
                 available_files.append(file_name)
-            else:
-              print('{} does not have stock data from the minimum date range {}/{} - {}/{}'.format(file_name, args.min_month, args.min_year, args.max_month, args.max_year))
+            #else:
+            #  print('{} does not have stock data from the minimum date range {}/{} - {}/{}'.format(file_name, args.min_month, args.min_year, args.max_month, args.max_year))
           else:
             print('{} is missing some -anticipated_columns, skipping.'.format(file_name))
 
