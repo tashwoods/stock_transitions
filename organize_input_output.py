@@ -18,10 +18,13 @@ def make_test_train_datasets(file_name, args):
     formatted_data = pd.DataFrame(scaled_features, index = formatted_data.index, columns = formatted_data.columns)
 
   #Extract train and test set
-  get_test_set_index(formatted_data)
-  first_test_index = (formatted_data[args.date_name] >= args.max_year).idxmax()
+  first_test_index = (formatted_data[args.date_name] >= args.max_year + ((args.max_month - 1)/12)).idxmax() #this could be more exact natasha
   train_set = formatted_data[:first_test_index - 1]
   test_set = formatted_data[first_test_index:]
+  print('train set')
+  print(train_set)
+  print('test set')
+  print(test_set)
 
 
   #Order train and test set by ascending date, likely not needed, but does not hurt
@@ -29,11 +32,6 @@ def make_test_train_datasets(file_name, args):
   test_set = test_set.sort_values(by = args.date_name)
   
   return test_set, train_set
-
-def get_test_set_index(formatted_data):
-  idx = (formatted_data['Date'] >= 2018).idxmax()
-  print(formatted_data.iloc[[idx]])
-  return idx
 
 def get_stock_name(file_name):
   if file_name.endswith('.us.txt'):

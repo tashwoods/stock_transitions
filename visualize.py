@@ -41,7 +41,7 @@ if __name__ == '__main__':
   parser.add_argument('-min_year', '--min_year', type = int, dest = 'min_year', default = 2008, help = 'first year to require stock data for')
   parser.add_argument('-max_year', '--max_year', type = int, dest = 'max_year', default = 2016, help = 'last year to require stock data for')
   parser.add_argument('-min_month', '--min_month', type = int, dest = 'min_month', default = 1, help = 'month of the first year to require stock data for')
-  parser.add_argument('-max_month', '--max_month', type = int, dest = 'max_month', default = 12, help = 'month of the last year to require stock data for')
+  parser.add_argument('-max_month', '--max_month', type = int, dest = 'max_month', default = 1, help = 'month of the last year to require stock data for')
   parser.add_argument('-year_test_set', '--year_test_set', type = int, dest = 'year_test_set', default = 2016, help = 'year to begin test set with')
   parser.add_argument('-month_test_set', '--month_test_set', type = int, dest = 'month_test_set', default = 1, help = 'month to begin test set with')
   args = parser.parse_args()
