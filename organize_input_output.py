@@ -18,13 +18,21 @@ def make_test_train_datasets(file_name, args):
     formatted_data = pd.DataFrame(scaled_features, index = formatted_data.index, columns = formatted_data.columns)
 
   #Extract train and test set
+  print(file_name)
+  get_test_set_index(formatted_data)
   train_set, test_set = train_test_split(formatted_data, test_size = args.test_size, random_state = 42) 
+
 
   #Order train and test set by ascending date
   train_set = train_set.sort_values(by = args.date_name)
   test_set = test_set.sort_values(by = args.date_name)
   
   return test_set, train_set
+
+def get_test_set_index(formatted_data):
+  idx = (formatted_data['Date'] >= 2016).idxmax()
+  print(formatted_data.iloc[[idx]])
+  return
 
 def get_stock_name(file_name):
   if file_name.endswith('.us.txt'):

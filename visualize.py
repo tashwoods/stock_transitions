@@ -40,7 +40,10 @@ if __name__ == '__main__':
   parser.add_argument('-lin_reg', '--lin_reg', type = int, dest = 'lin_reg', default = 0, help = 'set to one to model stock open price with linear regression')
   parser.add_argument('-min_year', '--min_year', type = int, dest = 'min_year', default = 2008, help = 'first year to require stock data for')
   parser.add_argument('-max_year', '--max_year', type = int, dest = 'max_year', default = 2016, help = 'last year to require stock data for')
-  parser.add_argument('-min_month', '--min_month', type = int, dest = 'min_month', default = 1, help = 'first month of the year to require stock data for')
+  parser.add_argument('-min_month', '--min_month', type = int, dest = 'min_month', default = 1, help = 'month of the first year to require stock data for')
+  parser.add_argument('-max_month', '--max_month', type = int, dest = 'max_month', default = 12, help = 'month of the last year to require stock data for')
+  parser.add_argument('-year_test_set', '--year_test_set', type = int, dest = 'year_test_set', default = 2016, help = 'year to begin test set with')
+  parser.add_argument('-month_test_set', '--month_test_set', type = int, dest = 'month_test_set', default = 1, help = 'month to begin test set with')
   args = parser.parse_args()
 
 
@@ -70,10 +73,10 @@ if __name__ == '__main__':
             last_line = [int(i) for i in last_line]
 
             if first_line[0] < args.min_year or first_line[0] == args.min_year and first_line[1] == args.min_month: #require first date to be 01/08 or earlier
-              if last_line[0] > args.max_year or last_line[0] == args.max_year and last_line[1] == args.min_month: #require last date to be 10/16 or later
+              if last_line[0] > args.max_year or last_line[0] == args.max_year and last_line[1] == args.max_month: #require last date to be 10/16 or later
                 available_files.append(file_name)
             else:
-              print('{} does not have stock data from the minimum date range 01/08 to 10/16'.format(file_name))
+              print('{} does not have stock data from the minimum date range {}/{} - {}/{}'.format(file_name, args.min_month, args.min_year, args.max_month, args.max_year))
           else:
             print('{} is missing some -anticipated_columns, skipping.'.format(file_name))
 
