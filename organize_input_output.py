@@ -3,6 +3,9 @@ from imported_libraries import *
 def add_attributes(dataset): #Natasha: make this less hardcoded and more dynamic
   dataset['Open_Close'] = dataset['Open']/dataset['Close']
   dataset['Low_High'] = dataset['Low']/dataset['High']
+  dataset['Close_Open_Change'] = (dataset['Close'] - dataset['Open'])/dataset['Open']
+  dataset['High_Open_Change'] = (dataset['High'] - dataset['Open'])/dataset['Open']
+  dataset['Low_Open_Change'] = (dataset['Open'] - dataset['Low'])/dataset['Open']
   return dataset
 
 def make_test_train_datasets(file_name, args):
@@ -14,6 +17,7 @@ def make_test_train_datasets(file_name, args):
   if args.combined_features == 1:
     formatted_data = add_attributes(formatted_data)
 
+  print(formatted_data)
   #get index of test date split before possibly scaling data, which will make this more difficult to do
  
   first_test_date = get_day_of_year(args.year_test_set + args.month_test_set + args.day_test_set)

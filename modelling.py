@@ -119,3 +119,42 @@ def averaged_dataframe(stock_object, days):
   split_data = [stock_object.year_test_set[i:i+days] for i in range(0,stock_object.year_test_set.shape[0],days)]
   return split_data
 
+def get_hmm_features(stock_object):
+  Close_Open_Change = np.array(stock_object['Close_Open_Change']) 
+  High_Open_Change = np.array(stock_object['High_Open_Change'])
+  Low_Open_Change = np.array(stock_object['Low_Open_Change'])
+
+  feature_vector = np.column_stack((Close_Open_Change, High_Open_Change, Low_Open_Change))
+  return feature_vector
+
+def hmm_prediction(stock_object):
+  get_most_probable_outcome(stock_object, 50)
+  return 
+
+def get_most_probable_outcome(stock_object, day_index):
+
+  previous_data_start_index = max(0, day_index - stock_object.input_args.n_latency_days)
+  previous_data_end_index = max(0, day_index - 1)
+  previous_data = stock_object.train_set.iloc[previous_data_start_index:previous_data_end_index]
+  previous_data_features = get_hmm_features(previous_data)
+
+  hmm = GaussianHMM(n_components = stock_object.input_args.n_hidden_markov_states)
+  hmm.fit(previous_data_features)
+
+  outcome_score = []
+  possible_outcomes = hmm_possible_outcomes(stock_object, stock_object.input_args.n_bins_hidden_var)
+  for possible_outcome in possible_outcomes:
+    total_data = np.row_stack((previous_data_features, possible_outcome))
+    outcome_score.append(hmm.score(total_data))
+  most_probable_outcome = possible_outcomes[np.argmax(outcome_score)] 
+
+  print('most probable outcome')
+  print(most_probable_outcome)
+  return previous_data_features
+
+def hmm_possible_outcomes(stock_object, n_steps):
+  frac_change_range = np.linspace(-0.1, 0.1, n_steps)
+  frac_high_range = np.linspace(-0.1, 0.1, n_steps)
+  frac_low_range = np.linspace(-0.1, 0.1, n_steps)
+  possible_outcomes = np.array(list(itertools.product(frac_change_range, frac_high_range, frac_low_range)))
+  return possible_outcomes

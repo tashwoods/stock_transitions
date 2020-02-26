@@ -1,4 +1,4 @@
-import sys, os, math, shutil, time, argparse, matplotlib, csv, math
+import sys, os, math, shutil, time, argparse, matplotlib, csv, math, itertools
 import random as stock_random
 import pandas as pd
 import numpy as np
@@ -16,6 +16,7 @@ from sklearn.base import BaseEstimator, TransformerMixin #for attribute adder
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 import statsmodels.api as sm
+from hmmlearn.hmm import GaussianHMM
 
 from classes import *
 from organize_input_output import *

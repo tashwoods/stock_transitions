@@ -16,7 +16,7 @@ if __name__ == '__main__':
   parser.add_argument('-t', '--test_size', type = float, dest = 'test_size', default = 0.2, help = 'Size of test set')
   parser.add_argument('-o', '--output_dir', type = str, dest = 'output_dir', default = 'output', help = 'name of output_dir')
   parser.add_argument('-d', '--date_name', type = str, dest = 'date_name', default = 'Date', help = 'name of Date variable in dataset')
-  parser.add_argument('-p', '--predict_variable_name', type = str, dest = 'predict_var', default = 'Open', help = 'name of variable in dataset that will be modelled')
+  parser.add_argument('-p', '--predict_variable_name', type = str, dest = 'predict_var', default = 'Close', help = 'name of variable in dataset that will be modelled')
   parser.add_argument('-vol', '--volume_name', type = str, dest = 'volume_name', default = 'Volume', help = 'name of Volume variable in dataset')
   parser.add_argument('-open_int', '--open_int_name', type = str, dest = 'open_int_name', default = 'OpenInt', help = 'name of OpenInt variable in dataset')
   parser.add_argument('-open', '--open_name', type = str, dest = 'open_name', default = 'Open', help = 'name of Open variable in dataset')
@@ -47,6 +47,9 @@ if __name__ == '__main__':
   parser.add_argument('-day_test_set', '--day_test_set', type = str, dest = 'day_test_set', default = '01', help = 'day of month to begin test set with')
   parser.add_argument('-days_in_week', '--days_in_week', type = int, dest = 'days_in_week', default = 7, help = 'days in week to use for weekly averging')
   parser.add_argument('-days_in_month', '--days_in_month', type = int, dest = 'days_in_month', default = 30, help = 'days in month to use for month averging')
+  parser.add_argument('-n_hidden_markov_states', '--n_hidden_markov_states', type = int, dest = 'n_hidden_markov_states', default = 4, help = 'number of hidden markov states to use')
+  parser.add_argument('-n_latency_days', '--n_latency_days', type = int, dest = 'n_latency_days', default = 10, help = 'number of latency days to use for hidden markov chain')
+  parser.add_argument('-n_bins_hidden_var', '--n_bins_hidden_var', type = int, dest = 'n_bins_hidden_var', default = 20, help = 'number of bins to use to quantize hidden variables in hidden markov chain')
   args = parser.parse_args()
 
 
@@ -110,9 +113,10 @@ if __name__ == '__main__':
   #Model Data
   for stock in stock_objects_list:
     if args.lin_reg == 1:
-      degrees = [1,2,3,4,5,6,7]
+      degrees = [1]
       for n in degrees:
         poly_fit(stock, n)
+      hmm_prediction(stock)
   
   if args.overlay_stock_plots == 1:
     for var in stock_objects_list[0].train_set.columns: #iterate over stock variables
