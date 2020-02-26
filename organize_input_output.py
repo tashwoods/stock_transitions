@@ -18,21 +18,16 @@ def make_test_train_datasets(file_name, args):
  
   first_test_date = get_day_of_year(args.year_test_set + args.month_test_set + args.day_test_set)
   string_last_test_date = str(int(args.year_test_set) + 1 ) + '0101'
-  print(string_last_test_date)
   last_test_date = get_day_of_year(str(int(args.year_test_set) + 1 ) + '0101') #Natasha this is hard-coded to only test over a year span
-  print('last test date: {}'.format(last_test_date))
   first_test_index = (formatted_data[args.date_name] >= first_test_date).idxmax()
   last_test_index = (formatted_data[args.date_name] >= last_test_date).idxmax()
-  print('first test index: {}'.format(first_test_index))
-  print('last test index: {}'.format(last_test_index))
-  print('first test value: {} '.format(formatted_data.loc[first_test_index]))
-  print('last test value: {} '.format(formatted_data.loc[last_test_index]))
 
   if args.scale_features == 1:
     scaled_features = StandardScaler().fit_transform(formatted_data.values)
     formatted_data = pd.DataFrame(scaled_features, index = formatted_data.index, columns = formatted_data.columns)
 
   #Extract train and test set
+  all_data_set = formatted_data
   train_set = formatted_data[:first_test_index]
   test_set = formatted_data[first_test_index:]
   year_test_set = formatted_data[first_test_index:last_test_index]
@@ -42,7 +37,7 @@ def make_test_train_datasets(file_name, args):
   test_set = test_set.sort_values(by = args.date_name)
   year_test_set = year_test_set.sort_values(by = args.date_name)
   
-  return test_set, train_set, year_test_set
+  return test_set, train_set, year_test_set, all_data_set
 
 def get_stock_name(file_name):
   if file_name.endswith('.us.txt'):

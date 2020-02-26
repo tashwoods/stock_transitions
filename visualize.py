@@ -91,9 +91,9 @@ if __name__ == '__main__':
     file_name = available_files[i]
     file_name = file_name.rstrip()
     make_nested_dir(args.output_dir, get_stock_name(file_name))
-    test_set,train_set,year_test_set = make_test_train_datasets(file_name, args)
+    test_set,train_set,year_test_set, all_data_set = make_test_train_datasets(file_name, args)
     if type(test_set) != None and type(train_set) != None:
-      stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set, train_set, year_test_set, args))
+      stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set, train_set, year_test_set, all_data_set, args))
       stock_objects_names.append(get_stock_name(file_name))
       if i % 100 == 0:
         print('Datasets made for {} of {} files in {} seconds.'.format(i, len(available_files), time.time() - start_time))
@@ -110,7 +110,9 @@ if __name__ == '__main__':
   #Model Data
   for stock in stock_objects_list:
     if args.lin_reg == 1:
-      predict_stocks(stock)
+      degrees = [1,2,3,4,5,6,7]
+      for n in degrees:
+        poly_fit(stock, n)
   
   if args.overlay_stock_plots == 1:
     for var in stock_objects_list[0].train_set.columns: #iterate over stock variables
