@@ -1,10 +1,10 @@
 from imported_libraries import *
 
 def worker_plots(stock_object):
-  stock_object.make_overlay_plot()
-  stock_object.make_scatter_heat_plots() #scatter plots with z axis coloring by third variable
-  stock_object.make_correlation_plots()
-  stock_object.make_time_dependent_plots()
+  #stock_object.make_overlay_plot() #overlay stock open, high, low, close vs. t plots
+  #stock_object.make_scatter_heat_plots() #scatter plots with z axis coloring by third variable
+  #stock_object.make_correlation_plots()
+  stock_object.make_time_dependent_plots() #for each stock variable individually
 
 
 
@@ -47,9 +47,11 @@ if __name__ == '__main__':
   parser.add_argument('-day_test_set', '--day_test_set', type = str, dest = 'day_test_set', default = '01', help = 'day of month to begin test set with')
   parser.add_argument('-days_in_week', '--days_in_week', type = int, dest = 'days_in_week', default = 7, help = 'days in week to use for weekly averging')
   parser.add_argument('-days_in_month', '--days_in_month', type = int, dest = 'days_in_month', default = 30, help = 'days in month to use for month averging')
-  parser.add_argument('-n_hidden_markov_states', '--n_hidden_markov_states', type = int, dest = 'n_hidden_markov_states', default = 4, help = 'number of hidden markov states to use')
-  parser.add_argument('-n_latency_days', '--n_latency_days', type = int, dest = 'n_latency_days', default = 10, help = 'number of latency days to use for hidden markov chain')
-  parser.add_argument('-n_bins_hidden_var', '--n_bins_hidden_var', type = int, dest = 'n_bins_hidden_var', default = 20, help = 'number of bins to use to quantize hidden variables in hidden markov chain')
+  parser.add_argument('-n_hidden_markov_states', '--n_hidden_markov_states', type = int, dest = 'n_hidden_markov_states', default = 2, help = 'number of hidden markov states to use')
+  parser.add_argument('-n_latency_days', '--n_latency_days', type = int, dest = 'n_latency_days', default = 1000, help = 'number of latency days to use for hidden markov chain')
+  parser.add_argument('-n_bins_hidden_var', '--n_bins_hidden_var', type = int, dest = 'n_bins_hidden_var', default = 2, help = 'number of bins to use to quantize primary hidden variable in hidden markov chain')
+  parser.add_argument('-n_bins_hidden_var_secondary', '--n_bins_hidden_var_secondary', type = int, dest = 'n_bins_hidden_var_secondary', default = 2, help = 'number of bins to use to quantize secondary hidden variables')
+  parser.add_argument('-n_hmm_predict_days', '--n_hmm_predict_days', type = int, dest = 'n_hmm_predict_days', default = 100, help = 'number of days to predict stock price using hmm')
   args = parser.parse_args()
 
 
@@ -110,14 +112,6 @@ if __name__ == '__main__':
     pool.close()
     pool.join()
 
-  #Model Data
-  for stock in stock_objects_list:
-    if args.lin_reg == 1:
-      degrees = [1]
-      for n in degrees:
-        poly_fit(stock, n)
-      hmm_prediction(stock)
-  
   if args.overlay_stock_plots == 1:
     for var in stock_objects_list[0].train_set.columns: #iterate over stock variables
       color = cm.rainbow(np.linspace(0,1,len(stock_objects_list)))
@@ -130,6 +124,15 @@ if __name__ == '__main__':
       plt.savefig(args.output_dir + '/stock_' + var + '_overlay.pdf')    
       plt.close('all')
 
-
-
+  #Model Data
+  for stock in stock_objects_list:
+    if args.lin_reg == 1:
+      degrees = [1]
+      for n in degrees:
+        poly_fit(stock, n)
+    print('here')
+    print(len(stock.train_set.index))
+    #hmm_get_close_prices_for_days(stock, stock.all_data_set, 0, len(stock.train_set.index)) #natasha un-hardcode this later
+    hmm_get_close_prices_train_set(stock, stock.train_set, stock.year_test_set) #natasha un-hardcode this later
+  
   print('----- {} seconds ---'.format(time.time() - start_time))
