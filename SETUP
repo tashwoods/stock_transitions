@@ -1,0 +1,34 @@
+R E Q U I R E D   E X T E R N A L  S O F T W A R E:
+-------------------------------------------------------------------
+
+-- python 3 which can be downloaded however you like (e.g. homebrew, etc)
+https://docs.python-guide.org/starting/install3/osx/
+ 
+-- matplotlib python -mpip install matplotlib
+
+-- pandas pip install pandas --user
+
+-- seaborn pip install seaborn --user
+
+-- sklearn pip install seaborn --user
+
+-- statsmodels pip install statsmodels --user
+
+-- hmmlearn pip install hmmlearn --user
+
+E X T R A 
+-------------------------------------------------------------------
+Vim 
+	Color Scheme:
+		git clone https://github.com/flazz/vim-colorschemes.git ~/.vim
+		.vimrc 
+			syntax on
+			colo Atelier_CaveDark
+	Minimal Tabbing:
+		.vimrc
+			set tabstop=2
+			set shiftwidth=2
+			set softtabstop=2
+
+
+
