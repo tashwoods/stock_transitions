@@ -56,7 +56,7 @@ def poly_fit(stock_object, n):
   plt.xlabel(stock_object.input_args.date_name)
   plt.ylabel(stock_object.input_args.predict_var)
 
-  
+  print('herez') 
   weekly_split_data = averaged_dataframe(stock_object.year_test_set, stock_object.input_args.days_in_week)
   monthly_split_data = averaged_dataframe(stock_object.year_test_set, stock_object.input_args.days_in_month)
 
@@ -70,8 +70,7 @@ def poly_fit(stock_object, n):
   plt.plot(weekly_date_array, weekly_data_array, '-y', label = 'Averaged Weekly, RMSE = {}'.format(weekly_total_error))
 
 
-  plt.xlim(1.5,1.7)
-  plt.ylim(1.2*min(stock_object.all_data_set[stock_object.input_args.date_name]), 1.2*max(stock_object.all_data_set[stock_object.input_args.predict_var]))
+  plt.ylim(1.2*min(stock_object.all_data_set[stock_object.input_args.predict_var]), 1.2*max(stock_object.all_data_set[stock_object.input_args.predict_var]))
   plt.legend(loc='upper left', borderaxespad=0., prop={'size': 6})
   plt.savefig(stock_object.input_args.output_dir + '/stock_' + stock_object.stock_name + '_poly'+ str(n) + '_overlay.pdf')    
   plt.close('all')

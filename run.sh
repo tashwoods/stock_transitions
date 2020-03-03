@@ -1,2 +1,2 @@
 rm -r output
-p visualize.py -f mrin.us.txt -v
+python3 visualize.py -f onefile.txt -v --indiv_plots 1 -lin_reg 1

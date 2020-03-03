@@ -34,7 +34,7 @@ if __name__ == '__main__':
   parser.add_argument('-drop_columns', '--drop_columns', nargs = '*', dest = 'drop_columns', default = [], help = 'list of columns to exclude from dataset')
   parser.add_argument('-N', '--number_files', type = int, dest = 'number_files', default = -1, help = 'number of files to randomly select from input file, if not specified or -1 all inputs files in input text file will be used')
   parser.add_argument('-min_file_size', '--min_file_size', type = int, dest = 'min_file_size', default = 100, help = 'minimum stock file size that will be used. This helps ignore empty files or files with few datapoints')
-  parser.add_argument('-scale_features', '--scale_features', type = int, dest = 'scale_features', default = 0, help = 'set to one to scale features using StandardScaler(), 0 to not')
+  parser.add_argument('-scale_features', '--scale_features', type = int, dest = 'scale_features', default = 1, help = 'set to one to scale features using StandardScaler(), 0 to not')
   parser.add_argument('-combined_features', '--combined_features', type = int, dest = 'combined_features', default = 0, help = 'set to one to add combined features to dataset, zero to not')
   parser.add_argument('-anticipated_columns', '--anticipated_columns', type = str, dest = 'anticipated_columns', default = 'Date,Open,High,Low,Close,Volume,OpenInt', help = 'list of columns that are expected in text files')
   parser.add_argument('-lin_reg', '--lin_reg', type = int, dest = 'lin_reg', default = 0, help = 'set to one to model stock open price with linear regression')
@@ -68,6 +68,7 @@ if __name__ == '__main__':
   for file_name in input_file:
     if len(file_name.strip()) > 0:
       file_name = file_name.rstrip()
+      print(file_name)
       if(os.stat(file_name).st_size > args.min_file_size): #ignore files with less than ~5 entries, as they are unlikely to be informative
         with open(file_name, 'r') as in_file:
           lines = in_file.read().splitlines()
@@ -113,6 +114,7 @@ if __name__ == '__main__':
     pool.join()
 
   if args.overlay_stock_plots == 1:
+    print(stock_objects_list[0])
     for var in stock_objects_list[0].train_set.columns: #iterate over stock variables
       color = cm.rainbow(np.linspace(0,1,len(stock_objects_list)))
       for stock,c in zip(range(len(stock_objects_list)), color): #iterate over stocks
@@ -130,9 +132,7 @@ if __name__ == '__main__':
       degrees = [1]
       for n in degrees:
         poly_fit(stock, n)
-    print('here')
-    print(len(stock.train_set.index))
-    #hmm_get_close_prices_for_days(stock, stock.all_data_set, 0, len(stock.train_set.index)) #natasha un-hardcode this later
-    hmm_get_close_prices_train_set(stock, stock.train_set, stock.year_test_set) #natasha un-hardcode this later
+        print('poly fit: {} complete'.format(n))
+    #hmm_get_close_prices_train_set(stock, stock.train_set, stock.year_test_set) #natasha un-hardcode this later
   
   print('----- {} seconds ---'.format(time.time() - start_time))
