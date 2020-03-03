@@ -1,5 +1,11 @@
 from imported_libraries import *
 
+class ThresholdMonitor(ConvergenceMonitor):
+  @property
+  def converged(self):
+    return(self.iter == self.n_iter or self.history[-1] > self.tol)
+    
+
 class stock_object_class:
   def __init__(self, file_name, stock_name, test_set, train_set, year_test_set, all_data_set, input_args):
     self.file_name = file_name

@@ -37,7 +37,7 @@ if __name__ == '__main__':
   parser.add_argument('-scale_features', '--scale_features', type = int, dest = 'scale_features', default = 1, help = 'set to one to scale features using StandardScaler(), 0 to not')
   parser.add_argument('-combined_features', '--combined_features', type = int, dest = 'combined_features', default = 0, help = 'set to one to add combined features to dataset, zero to not')
   parser.add_argument('-anticipated_columns', '--anticipated_columns', type = str, dest = 'anticipated_columns', default = 'Date,Open,High,Low,Close,Volume,OpenInt', help = 'list of columns that are expected in text files')
-  parser.add_argument('-lin_reg', '--lin_reg', type = int, dest = 'lin_reg', default = 0, help = 'set to one to model stock open price with linear regression')
+  parser.add_argument('-poly_reg', '--poly_reg', type = int, dest = 'poly_reg', default = 0, help = 'set to one to model stock open price with polynominal regression')
   parser.add_argument('-min_year', '--min_year', type = str, dest = 'min_year', default = '2008', help = 'first year to require stock data for')
   parser.add_argument('-max_year', '--max_year', type = str, dest = 'max_year', default = '2016', help = 'last year to require stock data for')
   parser.add_argument('-min_month', '--min_month', type = str, dest = 'min_month', default = '01', help = 'month of the first year to require stock data for')
@@ -128,11 +128,10 @@ if __name__ == '__main__':
 
   #Model Data
   for stock in stock_objects_list:
-    if args.lin_reg == 1:
+    if args.poly_reg == 1:
       degrees = [1]
       for n in degrees:
         poly_fit(stock, n)
-        print('poly fit: {} complete'.format(n))
-    #hmm_get_close_prices_train_set(stock, stock.train_set, stock.year_test_set) #natasha un-hardcode this later
+    hmm_get_close_prices_train_set(stock, stock.train_set, stock.year_test_set) #natasha un-hardcode this later
   
   print('----- {} seconds ---'.format(time.time() - start_time))

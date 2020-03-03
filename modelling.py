@@ -56,7 +56,6 @@ def poly_fit(stock_object, n):
   plt.xlabel(stock_object.input_args.date_name)
   plt.ylabel(stock_object.input_args.predict_var)
 
-  print('herez') 
   weekly_split_data = averaged_dataframe(stock_object.year_test_set, stock_object.input_args.days_in_week)
   monthly_split_data = averaged_dataframe(stock_object.year_test_set, stock_object.input_args.days_in_month)
 
@@ -136,38 +135,52 @@ def hmm_possible_outcomes(stock_object, n_steps, n_steps_secondary):
 def get_most_probable_outcome_train_set(stock_object, train_set, test_set_array):
   #train hmm using train_set
   train_set_features = get_hmm_features(train_set)
-  hmm = GaussianHMM(n_components = stock_object.input_args.n_hidden_markov_states, covariance_type = 'full', n_iter = 1000)
+  hmm = GaussianHMM(n_components = stock_object.input_args.n_hidden_markov_states, covariance_type = 'full', n_iter = 1000, verbose=True)
+  hmm.monitor = ThresholdMonitor(hmm.monitor_.tol, hmm.monitor_.n_iter, hmm.monitor_.verbose)
+  print('FITTING HMM ------------------------------------------')
   hmm.fit(train_set_features)
+  print('DONE FITTING HMM --------------------------------------')
 
   most_probable_outcome = []
   predicted_open = []
   possible_outcomes = hmm_possible_outcomes(stock_object, stock_object.input_args.n_bins_hidden_var, stock_object.input_args.n_bins_hidden_var_secondary)
   
-  #iterate over test_set array
+  #iterate over test_set array to obtain hmm prediction on test_set_array
   for test_set in test_set_array:
     print('on new test set---------------')
-    outcome_score = []
+    print(test_set)
     test_set_features = get_hmm_features(test_set)
     print(test_set_features)
-    print('prediction')
-    for test_set in test_set_array:
-      for possible_outcome in possible_outcomes:
-        total_data = np.row_stack((test_set_features, possible_outcome))
-        outcome_score.append(hmm.score(total_data))
-        print('possible outcome and score: {}'.format(hmm.score(total_data)))
-        print(possible_outcome)
+    outcome_score = []
 
-    print('all outcomescores')
-    print(outcome_score)
-    print(possible_outcomes[np.argmax(outcome_score)])
-    most_probable_outcome.append(possible_outcomes[np.argmax(outcome_score)])
-    #predicted_open = test_set[stock_object.inputs_args.open_name]*()
-    #actual_open = test_set[stock_object.inputs_args.open_name]
-    #error = 100*((predicted_open - actual_open)/actual_open)
-    #predicted_open.append(test_set[stock_object.inputs_args.open_name]*(1+most_probable_change))
-    #print('data: {} model: {} error: {}'.format(actual_open, predicted_open, error))
+    for possible_outcome in possible_outcomes: #calculate hmm score for each possible outcome
+      total_data = np.row_stack((test_set_features, possible_outcome))
+      outcome_score.append(hmm.score(total_data))
 
-  return outcome_scores
+    frac_change, _, _ = possible_outcomes[np.argmax(outcome_score)]
+    most_probable_outcome.append(frac_change)
+    print('frac_change: {}'.format(frac_change))
+
+    this_predicted_open = test_set.loc[0,stock_object.input_args.open_name]*(1 + frac_change)
+    actual_open = test_set.loc[0,stock_object.input_args.open_name]
+    error = 100*((predicted_open - actual_open)/actual_open)
+    print('data: {} model: {} error: {}'.format(actual_open, predicted_open, error))
+
+    predicted_open.append(this_predicted_open)
+
+
+  #Plot Data and Predictions
+  plt.plot(stock_object.input_args.date_name, stock_object.input_args.predict_var, data = stock_object.train_set, markerfacecolor = 'blue', linewidth = 0.4, label = 'Train Set')
+  plt.plot(stock_object.input_args.date_name, stock_object.input_args.predict_var, data = stock_object.test_set, markerfacecolor = 'red', linewidth = 0.4, label = 'Test Set')
+  print('predicted date array hopeuflly')
+  print(test_set[stock_object.input_args.date_name].to_numpy())
+  plt.plot(test_set[stock_object.input_args.date_name].to_numpy(), predicted_open, markerfacecolor = 'yellow', linewidth = 0.4, label = 'hmm')
+
+
+  plt.legend()
+
+  plt.savefig(stock_object.input_args.output_dir + '/stock_' + stock_object.stock_name + '_hmm_overlay.pdf')    
+  return predicted_open
 
 def split_dataframe_into_dataframes(dataframe, chunk_size):
   index_marks = range(0,len(dataframe.index), chunk_size)
@@ -183,7 +196,9 @@ def hmm_get_close_prices_train_set(stock_object, train_set, test_set):
 
   print('weekly_split_data')
   print(weekly_split_data)
-  predicted_close_prices, _, _ = get_most_probable_outcome_train_set(stock_object, stock_object.train_set, weekly_split_data)
+  predicted_close_prices = get_most_probable_outcome_train_set(stock_object, stock_object.train_set, weekly_split_data)
+
+  
   
 def get_close_price(stock_object, dataset, day_index):
   open_price = dataset.iloc[day_index][stock_object.input_args.open_name]

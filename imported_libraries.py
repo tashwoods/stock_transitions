@@ -17,6 +17,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 import statsmodels.api as sm
 from hmmlearn.hmm import GaussianHMM
+from hmmlearn.base import ConvergenceMonitor
 
 from classes import *
 from organize_input_output import *
