@@ -134,12 +134,16 @@ def hmm_possible_outcomes(stock_object, n_steps, n_steps_secondary):
 
 def get_most_probable_outcome_train_set(stock_object, train_set, test_set_array):
   #train hmm using train_set
+
   train_set_features = get_hmm_features(train_set)
+  print('trainset;;;;;')
+  print(train_set_features)
   hmm = GaussianHMM(n_components = stock_object.input_args.n_hidden_markov_states, covariance_type = 'full', n_iter = 1000, verbose=True)
   hmm.monitor = ThresholdMonitor(hmm.monitor_.tol, hmm.monitor_.n_iter, hmm.monitor_.verbose)
   print('FITTING HMM ------------------------------------------')
   hmm.fit(train_set_features)
   print('DONE FITTING HMM --------------------------------------')
+  print(hmm.monitor_.converged)
 
   most_probable_outcome = []
   predicted_open = []
@@ -168,18 +172,6 @@ def get_most_probable_outcome_train_set(stock_object, train_set, test_set_array)
 
     predicted_open.append(this_predicted_open)
 
-
-  #Plot Data and Predictions
-  plt.plot(stock_object.input_args.date_name, stock_object.input_args.predict_var, data = stock_object.train_set, markerfacecolor = 'blue', linewidth = 0.4, label = 'Train Set')
-  plt.plot(stock_object.input_args.date_name, stock_object.input_args.predict_var, data = stock_object.test_set, markerfacecolor = 'red', linewidth = 0.4, label = 'Test Set')
-  print('predicted date array hopeuflly')
-  print(test_set[stock_object.input_args.date_name].to_numpy())
-  plt.plot(test_set[stock_object.input_args.date_name].to_numpy(), predicted_open, markerfacecolor = 'yellow', linewidth = 0.4, label = 'hmm')
-
-
-  plt.legend()
-
-  plt.savefig(stock_object.input_args.output_dir + '/stock_' + stock_object.stock_name + '_hmm_overlay.pdf')    
   return predicted_open
 
 def split_dataframe_into_dataframes(dataframe, chunk_size):
@@ -187,18 +179,28 @@ def split_dataframe_into_dataframes(dataframe, chunk_size):
   dataframes_array = []
   for i in index_marks:
     dataframes_array.append(dataframe[i:i+1].mean().to_frame().T)
-  return dataframes_array
+  real_combined_dataframe = pd.concat(dataframes_array)
+  return dataframes_array, real_combined_dataframe
+
 
 def hmm_get_close_prices_train_set(stock_object, train_set, test_set):
-  weekly_split_data = split_dataframe_into_dataframes(stock_object.year_test_set, stock_object.input_args.days_in_week)
-  monthly_split_data = split_dataframe_into_dataframes(stock_object.year_test_set, stock_object.input_args.days_in_month)
+  weekly_split_data, weekly_dataframe = split_dataframe_into_dataframes(stock_object.year_test_set, stock_object.input_args.days_in_week)
+  monthly_split_data, monthly_dataframe= split_dataframe_into_dataframes(stock_object.year_test_set, stock_object.input_args.days_in_month)
   predicted_close_prices = []
 
   print('weekly_split_data')
   print(weekly_split_data)
   predicted_close_prices = get_most_probable_outcome_train_set(stock_object, stock_object.train_set, weekly_split_data)
 
-  
+  #Plot Data and Predictions
+  plt.plot(stock_object.input_args.date_name, stock_object.input_args.predict_var, data = stock_object.train_set, markerfacecolor = 'blue', linewidth = 0.4, label = 'Train Set')
+  plt.plot(stock_object.input_args.date_name, stock_object.input_args.predict_var, data = stock_object.test_set, markerfacecolor = 'red', linewidth = 0.4, label = 'Test Set')
+  print('checking weekly dataframe')
+  print(weekly_dataframe[stock_object.input_args.date_name])
+  plt.plot(weekly_dataframe[stock_object.input_args.date_name], predicted_close_prices, markerfacecolor = 'yellow', linewidth = 0.4, label = 'HMM')
+  plt.xlim(1.5,1.9)
+  plt.legend()
+  plt.savefig(stock_object.input_args.output_dir + '/stock_' + stock_object.stock_name + '_hmm_overlay.pdf')    
   
 def get_close_price(stock_object, dataset, day_index):
   open_price = dataset.iloc[day_index][stock_object.input_args.open_name]
