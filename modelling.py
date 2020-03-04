@@ -118,9 +118,9 @@ def averaged_dataframe(dataset, days):
   return split_data
 
 def get_hmm_features(stock_object):
-  Close_Open_Change = np.array(stock_object['Close_Open_Change']) 
-  High_Open_Change = np.array(stock_object['High_Open_Change'])
-  Low_Open_Change = np.array(stock_object['Low_Open_Change'])
+  Close_Open_Change = np.round(np.array(stock_object['Close_Open_Change']),1)
+  High_Open_Change = np.round(np.array(stock_object['High_Open_Change']),1)
+  Low_Open_Change = np.round(np.array(stock_object['Low_Open_Change']),1)
 
   feature_vector = np.column_stack((Close_Open_Change, High_Open_Change, Low_Open_Change))
   return feature_vector
@@ -138,7 +138,7 @@ def get_most_probable_outcome_train_set(stock_object, train_set, test_set_array)
   train_set_features = get_hmm_features(train_set)
   print('trainset;;;;;')
   print(train_set_features)
-  hmm = GaussianHMM(n_components = stock_object.input_args.n_hidden_markov_states, covariance_type = 'full', n_iter = 1000, verbose=True)
+  hmm = GaussianHMM(n_components = stock_object.input_args.n_hidden_markov_states, n_iter = 1000, verbose=True)
   hmm.monitor = ThresholdMonitor(hmm.monitor_.tol, hmm.monitor_.n_iter, hmm.monitor_.verbose)
   print('FITTING HMM ------------------------------------------')
   hmm.fit(train_set_features)
@@ -161,6 +161,10 @@ def get_most_probable_outcome_train_set(stock_object, train_set, test_set_array)
       total_data = np.row_stack((test_set_features, possible_outcome))
       outcome_score.append(hmm.score(total_data))
 
+
+    print('argmax')
+    print(np.argmax(outcome_score))
+    print(outcome_score)
     frac_change, _, _ = possible_outcomes[np.argmax(outcome_score)]
     most_probable_outcome.append(frac_change)
     print('frac_change: {}'.format(frac_change))
