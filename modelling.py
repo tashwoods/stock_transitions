@@ -1,5 +1,42 @@
 from imported_libraries import *
 
+def xgb_predict(stock_object):
+  col_std = 1
+  col_mean  = 1
+  print('Beginning XGB Predict')
+  predict_var = stock_object.input_args.predict_var
+  date_name = stock_object.input_args.date_name
+  print('predict_var')
+  print(predict_var)
+  x_train_set = stock_object.train_set.drop(predict_var, axis = 1)
+  y_train_set = stock_object.train_set[[predict_var]]
+
+  x_test_set = stock_object.year_test_set.drop(predict_var, axis = 1)
+  y_test_set = stock_object.year_test_set[[predict_var]]
+
+  print('train set x')
+  print(x_train_set)
+  print('train set y')
+  print(y_train_set)
+
+  model = XGBRegressor(seed = 100, n_estimators = 100, max_depth = 3, learning_rate=0.1, min_child_weight=1, subsample=1, colsample_bytree = col_std, colsample_bylevel = col_mean, gamma = 0)
+  model.fit(x_train_set, y_train_set)
+  test_prediction = model.predict(x_test_set)
+  test_prediction_scaled = test_prediction * col_std + col_mean
+  print('prediction')
+  print(test_prediction_scaled)
+  print('actual')
+  print(y_test_set)
+
+  plt.plot(x_train_set[date_name], y_train_set, markerfacecolor = 'red', label = 'train set')
+  plt.plot(x_test_set[date_name], y_test_set, markerfacecolor = 'blue', label = 'test set')
+  plt.plot(x_test_set[date_name], test_prediction_scaled, markerfacecolor = 'black', label = 'XGB Regression')
+  plt.legend()
+  plt.savefig(stock_object.input_args.output_dir + '/stock_' + stock_object.stock_name + '_xgb_overlay.pdf')    
+
+
+
+
 def linear_predict_stocks(stock_object):
   date = stock_object.train_set[stock_object.input_args.date_name]
   open_price = stock_object.train_set[stock_object.input_args.predict_var]

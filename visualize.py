@@ -132,6 +132,7 @@ if __name__ == '__main__':
       degrees = [1]
       for n in degrees:
         poly_fit(stock, n)
-    hmm_get_close_prices_train_set(stock, stock.train_set, stock.year_test_set) #natasha un-hardcode this later
+    #hmm_get_close_prices_train_set(stock, stock.train_set, stock.year_test_set) #natasha un-hardcode this later
+    xgb_predict(stock)
   
   print('----- {} seconds ---'.format(time.time() - start_time))
