@@ -1,41 +1,45 @@
 from imported_libraries import *
 
 def xgb_predict(stock_object):
+  print('Beginning XGB Predict')
   col_std = 1
   col_mean  = 1
-  print('Beginning XGB Predict')
   predict_var = stock_object.input_args.predict_var
   date_name = stock_object.input_args.date_name
-  print('predict_var')
-  print(predict_var)
+
   x_train_set = stock_object.train_set.drop(predict_var, axis = 1)
   y_train_set = stock_object.train_set[[predict_var]]
+  x_test_set = stock_object.test_set.drop(predict_var, axis = 1)
+  y_test_set = stock_object.test_set[[predict_var]]
 
-  x_test_set = stock_object.year_test_set.drop(predict_var, axis = 1)
-  y_test_set = stock_object.year_test_set[[predict_var]]
-
-  print('train set x')
-  print(x_train_set)
-  print('train set y')
-  print(y_train_set)
-
-  model = XGBRegressor(seed = 100, n_estimators = 100, max_depth = 3, learning_rate=0.1, min_child_weight=1, subsample=1, colsample_bytree = col_std, colsample_bylevel = col_mean, gamma = 0)
+  model = XGBRegressor(seed = 100, n_estimators = 20, max_depth = 5, learning_rate=0.1, min_child_weight=1, subsample=1, colsample_bytree = col_std, colsample_bylevel = col_mean, gamma = 0.1)
   model.fit(x_train_set, y_train_set)
   test_prediction = model.predict(x_test_set)
-  test_prediction_scaled = test_prediction * col_std + col_mean
-  print('prediction')
-  print(test_prediction_scaled)
+  test_prediction_scaled = pd.DataFrame(test_prediction * col_std + col_mean)
+
+  prediction_dataframe = x_test_set
+  prediction_dataframe[predict_var] = test_prediction_scaled.values
+
+  unscaled_train_set = get_unscaled_data(stock_object.train_set, stock_object)
+  unscaled_test_set = get_unscaled_data(stock_object.test_set, stock_object)
+  unscaled_prediction_set = get_unscaled_data(prediction_dataframe, stock_object)
+
   print('actual')
-  print(y_test_set)
+  print(unscaled_test_set)
+  print('predicted')
+  print(unscaled_prediction_set[predict_var])
 
-  plt.plot(x_train_set[date_name], y_train_set, markerfacecolor = 'red', label = 'train set')
-  plt.plot(x_test_set[date_name], y_test_set, markerfacecolor = 'blue', label = 'test set')
-  plt.plot(x_test_set[date_name], test_prediction_scaled, markerfacecolor = 'black', label = 'XGB Regression')
+  plt.plot(unscaled_train_set[date_name], unscaled_train_set[predict_var], label = 'Train Set')
+  #plt.plot(unscaled_test_set[date_name], unscaled_test_set[predict_var], label = 'Test set')
+  plt.plot(unscaled_prediction_set[date_name], unscaled_prediction_set[predict_var], label = 'XGB Prediction')
   plt.legend()
-  plt.savefig(stock_object.input_args.output_dir + '/stock_' + stock_object.stock_name + '_xgb_overlay.pdf')    
+  plt.savefig(stock_object.input_args.output_dir + '/' + stock_object.stock_name + '/' + 'stock_' + stock_object.stock_name + '_xgb_overlay.pdf')    
 
+def get_unscaled_data(dataset, stock_object):
+  array_data = stock_object.scaler.inverse_transform(dataset)
+  formatted_data = pd.DataFrame(array_data, index = dataset.index, columns = dataset.columns)
 
-
+  return formatted_data
 
 def linear_predict_stocks(stock_object):
   date = stock_object.train_set[stock_object.input_args.date_name]
@@ -45,8 +49,6 @@ def linear_predict_stocks(stock_object):
   model = sm.OLS(date, open_price).fit()
   predictions = model.predict(open_price) 
   const, slope = model.params
-
-  print(model.summary())
 
   plt.plot(stock_object.input_args.date_name, stock_object.input_args.predict_var, data = stock_object.train_set, markerfacecolor = 'blue', linewidth = 0.4, label = 'Train Set')
   plt.plot(stock_object.input_args.date_name, stock_object.input_args.predict_var, data = stock_object.test_set, markerfacecolor = 'red', linewidth = 0.4, label = 'Test Set')
@@ -173,8 +175,6 @@ def get_most_probable_outcome_train_set(stock_object, train_set, test_set_array)
   #train hmm using train_set
 
   train_set_features = get_hmm_features(train_set)
-  print('trainset;;;;;')
-  print(train_set_features)
   hmm = GaussianHMM(n_components = stock_object.input_args.n_hidden_markov_states, n_iter = 1000, verbose=True)
   hmm.monitor = ThresholdMonitor(hmm.monitor_.tol, hmm.monitor_.n_iter, hmm.monitor_.verbose)
   print('FITTING HMM ------------------------------------------')
@@ -188,10 +188,7 @@ def get_most_probable_outcome_train_set(stock_object, train_set, test_set_array)
   
   #iterate over test_set array to obtain hmm prediction on test_set_array
   for test_set in test_set_array:
-    print('on new test set---------------')
-    print(test_set)
     test_set_features = get_hmm_features(test_set)
-    print(test_set_features)
     outcome_score = []
 
     for possible_outcome in possible_outcomes: #calculate hmm score for each possible outcome
@@ -199,12 +196,8 @@ def get_most_probable_outcome_train_set(stock_object, train_set, test_set_array)
       outcome_score.append(hmm.score(total_data))
 
 
-    print('argmax')
-    print(np.argmax(outcome_score))
-    print(outcome_score)
     frac_change, _, _ = possible_outcomes[np.argmax(outcome_score)]
     most_probable_outcome.append(frac_change)
-    print('frac_change: {}'.format(frac_change))
 
     this_predicted_open = test_set.loc[0,stock_object.input_args.open_name]*(1 + frac_change)
     actual_open = test_set.loc[0,stock_object.input_args.open_name]
@@ -229,15 +222,11 @@ def hmm_get_close_prices_train_set(stock_object, train_set, test_set):
   monthly_split_data, monthly_dataframe= split_dataframe_into_dataframes(stock_object.year_test_set, stock_object.input_args.days_in_month)
   predicted_close_prices = []
 
-  print('weekly_split_data')
-  print(weekly_split_data)
   predicted_close_prices = get_most_probable_outcome_train_set(stock_object, stock_object.train_set, weekly_split_data)
 
   #Plot Data and Predictions
   plt.plot(stock_object.input_args.date_name, stock_object.input_args.predict_var, data = stock_object.train_set, markerfacecolor = 'blue', linewidth = 0.4, label = 'Train Set')
   plt.plot(stock_object.input_args.date_name, stock_object.input_args.predict_var, data = stock_object.test_set, markerfacecolor = 'red', linewidth = 0.4, label = 'Test Set')
-  print('checking weekly dataframe')
-  print(weekly_dataframe[stock_object.input_args.date_name])
   plt.plot(weekly_dataframe[stock_object.input_args.date_name], predicted_close_prices, markerfacecolor = 'yellow', linewidth = 0.4, label = 'HMM')
   plt.xlim(1.5,1.9)
   plt.legend()

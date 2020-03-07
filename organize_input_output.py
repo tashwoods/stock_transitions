@@ -17,7 +17,11 @@ def make_test_train_datasets(file_name, args):
   if args.combined_features == 1:
     formatted_data = add_attributes(formatted_data)
 
-  print(formatted_data)
+  #put predicted variable at end of dataframe to make using StandardScaler easier later
+  columns = list(formatted_data.columns)
+  columns.remove(args.predict_var)
+  columns.append(args.predict_var)
+  formatted_data = formatted_data[columns]
   #get index of test date split before possibly scaling data, which will make this more difficult to do
  
   first_test_date = get_day_of_year(args.year_test_set + args.month_test_set + args.day_test_set)
@@ -26,8 +30,10 @@ def make_test_train_datasets(file_name, args):
   first_test_index = (formatted_data[args.date_name] >= first_test_date).idxmax()
   last_test_index = (formatted_data[args.date_name] >= last_test_date).idxmax()
 
+  formatted_data_unscaled = formatted_data
   if args.scale_features == 1:
-    scaled_features = StandardScaler().fit_transform(formatted_data.values)
+    scaler = StandardScaler()
+    scaled_features = scaler.fit_transform(formatted_data.values)
     formatted_data = pd.DataFrame(scaled_features, index = formatted_data.index, columns = formatted_data.columns)
 
   #Extract train and test set
@@ -36,12 +42,21 @@ def make_test_train_datasets(file_name, args):
   test_set = formatted_data[first_test_index:]
   year_test_set = formatted_data[first_test_index:last_test_index]
 
+  all_data_set_unscaled = formatted_data_unscaled
+  train_set_unscaled = formatted_data_unscaled[:first_test_index]
+  test_set_unscaled = formatted_data_unscaled[first_test_index:]
+  year_test_set_unscaled = formatted_data_unscaled[first_test_index:last_test_index]
+
   #Order train and test set by ascending date, likely not needed, but does not hurt
   train_set = train_set.sort_values(by = args.date_name)
   test_set = test_set.sort_values(by = args.date_name)
   year_test_set = year_test_set.sort_values(by = args.date_name)
+
+  train_set_unscaled = train_set_unscaled.sort_values(by = args.date_name)
+  test_set_unscaled = test_set_unscaled.sort_values(by = args.date_name)
+  year_test_set = year_test_set_unscaled.sort_values(by = args.date_name)
   
-  return test_set, train_set, year_test_set, all_data_set
+  return test_set_unscaled, train_set_unscaled, year_test_set_unscaled, all_data_set_unscaled, test_set, train_set, year_test_set, all_data_set, scaler
 
 def get_stock_name(file_name):
   if file_name.endswith('.us.txt'):

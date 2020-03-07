@@ -7,14 +7,20 @@ class ThresholdMonitor(ConvergenceMonitor):
     
 
 class stock_object_class:
-  def __init__(self, file_name, stock_name, test_set, train_set, year_test_set, all_data_set, input_args):
+  def __init__(self, file_name, stock_name, test_set_unscaled, train_set_unscaled, year_test_set_unscaled, all_data_set_unscaled, test_set, train_set, year_test_set, all_data_set, scaler, input_args):
     self.file_name = file_name
     self.stock_name = stock_name
+    self.test_set_unscaled = test_set_unscaled
+    self.train_set_unscaled = train_set_unscaled
+    self.year_test_set_unscaled = year_test_set_unscaled
+    self.all_data_set_unscaled = all_data_set_unscaled
+    self.input_args = input_args
     self.test_set = test_set
     self.train_set = train_set
     self.year_test_set = year_test_set
     self.all_data_set = all_data_set
-    self.input_args = input_args
+    self.scaler = scaler
+
 
   def make_histograms(self, var):
     dataset = self.train_set
