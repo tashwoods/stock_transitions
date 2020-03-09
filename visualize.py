@@ -136,6 +136,6 @@ if __name__ == '__main__':
       for n in degrees:
         print('hi')
         poly_fit(stock, n)
-    #xgb_predict(stock)
+    xgb_predict(stock)
   
   print('----- {} seconds ---'.format(time.time() - start_time))

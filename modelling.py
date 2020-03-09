@@ -19,12 +19,6 @@ def get_unscaled_data(dataset, stock_object):
 def get_scaled_prediction_dataframe(x_test_set, test_prediction, stock_object):
   test_prediction_scaled = pd.DataFrame(test_prediction * stock_object.input_args.col_std + stock_object.input_args.col_mean)
   prediction_dataframe = x_test_set
-  print('x test set')
-  print(x_test_set)
-  print('test prediction')
-  print(test_prediction)
-  print('length of test predition')
-  print(len(test_prediction))
   prediction_dataframe[stock_object.input_args.predict_var] = test_prediction_scaled.values
   return prediction_dataframe
 
@@ -52,7 +46,6 @@ def xgb_predict(stock_object):
   plt.legend()
   plt.savefig(stock_object.input_args.output_dir + '/' + stock_object.stock_name + '/' + 'stock_' + stock_object.stock_name + '_xgb_overlay.pdf')    
 
-
 def poly_fit(stock_object, n):
   x_train_set, y_train_set, x_test_set, y_test_set = get_x_y_test_train(stock_object)
   model = np.poly1d(np.polyfit(stock_object.train_set[stock_object.input_args.date_name], stock_object.train_set[stock_object.input_args.predict_var], n))
@@ -77,19 +70,34 @@ def poly_fit(stock_object, n):
   plt.savefig(stock_object.input_args.output_dir + '/stock_' + stock_object.stock_name + '_poly'+ str(n) + '_overlay.pdf')    
   plt.close('all')
 
-
-
 def get_general_errors_dataframes(stock_object, input_data, model):
   error_array = []
   error_square_array = []
   date_array = []
   data_array = []
+  print('input data columns')
+  print(input_data.columns)
+  print(input_data)
   date_column_index = input_data.columns.get_loc(stock_object.input_args.date_name)
   predict_var_column_index = input_data.columns.get_loc(stock_object.input_args.predict_var)
+  print('date index')
+  print(date_column_index)
+  print('predcit var index')
+  print(predict_var_column_index)
+
+ 
+
+ ### Natasha you need to fix this so it can calculate errors using the xgb model and polynominal models~~~~~~~~~~~~start here
   for i in range(len(input_data.index)):
-    date = input_data.iloc[i, date_column_index]
-    data = input_data.iloc[i, predict_var_column_index]
-    predic = model(date)
+    try:
+      date = input_data.iloc[i, date_column_index]
+      data = input_data.iloc[i, predict_var_column_index]
+      predic = model(date)
+    except:
+      date = input_data.iloc[i, date_column_index]
+      data = stock_object.test_set.drop(predict_var, axis = 1)
+      predic = model.predict(date)
+
     date_array.append(date)
     error_array.append(predic-data)
     error_square_array.append((predic - data)**2)
