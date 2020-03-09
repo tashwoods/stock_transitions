@@ -12,7 +12,7 @@ def xgb_predict(stock_object):
   x_test_set = stock_object.test_set.drop(predict_var, axis = 1)
   y_test_set = stock_object.test_set[[predict_var]]
 
-  model = XGBRegressor(seed = 100, n_estimators = 20, max_depth = 5, learning_rate=0.1, min_child_weight=1, subsample=1, colsample_bytree = col_std, colsample_bylevel = col_mean, gamma = 0.1)
+  model = XGBRegressor(seed = 100, n_estimators = 5, max_depth = 5, learning_rate=0.1, min_child_weight=1, subsample=1, colsample_bytree = col_std, colsample_bylevel = col_mean, gamma = 0.1)
   model.fit(x_train_set, y_train_set)
   test_prediction = model.predict(x_test_set)
   test_prediction_scaled = pd.DataFrame(test_prediction * col_std + col_mean)
@@ -30,7 +30,7 @@ def xgb_predict(stock_object):
   print(unscaled_prediction_set[predict_var])
 
   plt.plot(unscaled_train_set[date_name], unscaled_train_set[predict_var], label = 'Train Set')
-  #plt.plot(unscaled_test_set[date_name], unscaled_test_set[predict_var], label = 'Test set')
+  plt.plot(unscaled_test_set[date_name], unscaled_test_set[predict_var], label = 'Test set')
   plt.plot(unscaled_prediction_set[date_name], unscaled_prediction_set[predict_var], label = 'XGB Prediction')
   plt.legend()
   plt.savefig(stock_object.input_args.output_dir + '/' + stock_object.stock_name + '/' + 'stock_' + stock_object.stock_name + '_xgb_overlay.pdf')    
@@ -64,8 +64,8 @@ def linear_predict_stocks(stock_object):
   plt.ylabel(stock_object.input_args.predict_var)
 
   
-  weekly_split_data = averaged_dataframe(stock_object.year_test_set, stock_object.input_args.days_in_week)
-  monthly_split_data = averaged_dataframe(stock_object.year_test_set, stock_object.input_args.days_in_month)
+  weekly_split_data = averaged_dataframe_array(stock_object.year_test_set, stock_object.input_args.days_in_week)
+  monthly_split_data = averaged_dataframe_array(stock_object.year_test_set, stock_object.input_args.days_in_month)
 
   weekly_total_error, weekly_error_array, weekly_date_array, weekly_data_array = get_errors(stock_object, weekly_split_data, model)
   monthly_total_error, monthly_error_array, monthly_date_array, monthly_data_array = get_errors(stock_object, monthly_split_data, model)
@@ -95,8 +95,8 @@ def poly_fit(stock_object, n):
   plt.xlabel(stock_object.input_args.date_name)
   plt.ylabel(stock_object.input_args.predict_var)
 
-  weekly_split_data = averaged_dataframe(stock_object.year_test_set, stock_object.input_args.days_in_week)
-  monthly_split_data = averaged_dataframe(stock_object.year_test_set, stock_object.input_args.days_in_month)
+  weekly_split_data = averaged_dataframe_array(stock_object.year_test_set, stock_object.input_args.days_in_week)
+  monthly_split_data = averaged_dataframe_array(stock_object.year_test_set, stock_object.input_args.days_in_month)
 
   weekly_total_error, weekly_error_array, weekly_date_array, weekly_data_array = get_general_errors(stock_object, weekly_split_data, model)
   monthly_total_error, monthly_error_array, monthly_date_array, monthly_data_array = get_general_errors(stock_object, monthly_split_data, model)
@@ -152,9 +152,7 @@ def get_errors(stock_object, input_data, model):
   
   return total_error, error_array, date_array, data_array
 
-def averaged_dataframe(dataset, days):
-  split_data = [dataset[i:i+days] for i in range(0,dataset.shape[0],days)]
-  return split_data
+
 
 def get_hmm_features(stock_object):
   Close_Open_Change = np.round(np.array(stock_object['Close_Open_Change']),1)

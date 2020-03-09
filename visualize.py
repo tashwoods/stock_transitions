@@ -128,6 +128,7 @@ if __name__ == '__main__':
   #Model Data
   for stock in stock_objects_list:
     if args.poly_reg == 1:
+      print('DOING POLYNOMINAL FITS')
       degrees = [1]
       for n in degrees:
         poly_fit(stock, n)

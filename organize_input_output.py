@@ -8,6 +8,27 @@ def add_attributes(dataset): #Natasha: make this less hardcoded and more dynamic
   dataset['Low_Open_Change'] = (dataset['Open'] - dataset['Low'])/dataset['Open']
   return dataset
 
+def averaged_dataframe(dataset, days):
+  dfs = list()
+  print('trying to get indicies')
+  indices = np.arange(0, len(dataset.index), days)
+  print(indices)
+  print(dataset.iloc[0])
+  for i in range(len(indices)):
+    this_dataframe = dataset.iloc[indices[i]:indices[i+1]]
+    print('this dataframe')
+    print(this_dataframe)
+    dfs.append(this_dataframe)
+
+  print(dfs)
+    
+
+  return 
+
+def averaged_dataframe_array(dataset, days):
+  split_data = [dataset[i:i+days] for i in range(0,dataset.shape[0],days)]
+  return split_data
+
 def make_test_train_datasets(file_name, args):
   #Check metadata of given stock
   formatted_data = get_data(file_name, args.date_name)
@@ -50,6 +71,10 @@ def make_test_train_datasets(file_name, args):
   #Order train and test set by ascending date, likely not needed, but does not hurt
   train_set = train_set.sort_values(by = args.date_name)
   test_set = test_set.sort_values(by = args.date_name)
+  print('before averaging~~~~~~~~~~~~')
+  test_set = averaged_dataframe(test_set, args.days_in_week)
+  print('test set~~~~~~~~~~~~')
+  print(test_set)
   year_test_set = year_test_set.sort_values(by = args.date_name)
 
   train_set_unscaled = train_set_unscaled.sort_values(by = args.date_name)
