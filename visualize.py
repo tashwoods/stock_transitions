@@ -52,6 +52,7 @@ if __name__ == '__main__':
   parser.add_argument('-n_bins_hidden_var', '--n_bins_hidden_var', type = int, dest = 'n_bins_hidden_var', default = 2, help = 'number of bins to use to quantize primary hidden variable in hidden markov chain')
   parser.add_argument('-n_bins_hidden_var_secondary', '--n_bins_hidden_var_secondary', type = int, dest = 'n_bins_hidden_var_secondary', default = 2, help = 'number of bins to use to quantize secondary hidden variables')
   parser.add_argument('-n_hmm_predict_days', '--n_hmm_predict_days', type = int, dest = 'n_hmm_predict_days', default = 100, help = 'number of days to predict stock price using hmm')
+  parser.add_argument('-test_set_averaged', '--test_set_averaged', type = int, dest = 'test_set_averaged', default = 1, help = 'set to one to average over the number of days in week for the test set, set to zero to not do this')
   args = parser.parse_args()
 
 

@@ -10,20 +10,13 @@ def add_attributes(dataset): #Natasha: make this less hardcoded and more dynamic
 
 def averaged_dataframe(dataset, days):
   dfs = list()
-  print('trying to get indicies')
   indices = np.arange(0, len(dataset.index), days)
-  print(indices)
-  print(dataset.iloc[0])
-  for i in range(len(indices)):
+  for i in range(len(indices) - 1):
     this_dataframe = dataset.iloc[indices[i]:indices[i+1]]
-    print('this dataframe')
-    print(this_dataframe)
-    dfs.append(this_dataframe)
+    dfs.append(this_dataframe.mean(axis=0))
+  combined_dataframe = pd.concat(dfs,axis=1).T
 
-  print(dfs)
-    
-
-  return 
+  return combined_dataframe
 
 def averaged_dataframe_array(dataset, days):
   split_data = [dataset[i:i+days] for i in range(0,dataset.shape[0],days)]
@@ -43,8 +36,8 @@ def make_test_train_datasets(file_name, args):
   columns.remove(args.predict_var)
   columns.append(args.predict_var)
   formatted_data = formatted_data[columns]
+
   #get index of test date split before possibly scaling data, which will make this more difficult to do
- 
   first_test_date = get_day_of_year(args.year_test_set + args.month_test_set + args.day_test_set)
   string_last_test_date = str(int(args.year_test_set) + 1 ) + '0101'
   last_test_date = get_day_of_year(str(int(args.year_test_set) + 1 ) + '0101') #Natasha this is hard-coded to only test over a year span
@@ -60,8 +53,10 @@ def make_test_train_datasets(file_name, args):
   #Extract train and test set
   all_data_set = formatted_data
   train_set = formatted_data[:first_test_index]
-  test_set = formatted_data[first_test_index:]
   year_test_set = formatted_data[first_test_index:last_test_index]
+  test_set = formatted_data[first_test_index:]
+  if args.test_set_averaged:
+    test_set = averaged_dataframe(test_set, args.days_in_week) #average over days in week for test set
 
   all_data_set_unscaled = formatted_data_unscaled
   train_set_unscaled = formatted_data_unscaled[:first_test_index]
@@ -71,10 +66,6 @@ def make_test_train_datasets(file_name, args):
   #Order train and test set by ascending date, likely not needed, but does not hurt
   train_set = train_set.sort_values(by = args.date_name)
   test_set = test_set.sort_values(by = args.date_name)
-  print('before averaging~~~~~~~~~~~~')
-  test_set = averaged_dataframe(test_set, args.days_in_week)
-  print('test set~~~~~~~~~~~~')
-  print(test_set)
   year_test_set = year_test_set.sort_values(by = args.date_name)
 
   train_set_unscaled = train_set_unscaled.sort_values(by = args.date_name)
