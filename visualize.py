@@ -140,5 +140,12 @@ if __name__ == '__main__':
     xgb_predict(stock)
     print('xgb sequential predict')
     xgb_sequential_predict(stock)
+    print('here')
+    print(stock.unscaled_model_names)
+    print(stock.unscaled_models)
+    print(stock.unscaled_errors)
+    overlay_predictions(stock)
+    print('now here')
+
   
   print('----- {} seconds ---'.format(time.time() - start_time))

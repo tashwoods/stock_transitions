@@ -20,7 +20,22 @@ class stock_object_class:
     self.year_test_set = year_test_set
     self.all_data_set = all_data_set
     self.scaler = scaler
+    self.unscaled_model_names = []
+    self.unscaled_models = []
+    self.unscaled_errors = []
+    self.scaled_model_names = []
+    self.scaled_models = []
+    self.scaled_errors = []
 
+  def add_unscaled_model(self, name, model, error):
+    self.unscaled_model_names.append(name)
+    self.unscaled_models.append(model)
+    self.unscaled_errors.append(error)
+  def add_scaled_model(self, name, model, error):
+    self.scaled_model_names.append(name)
+    self.scaled_models.append(model)
+    self.scaled_errors.append(error)
+      
 
   def make_histograms(self, var):
     dataset = self.train_set
