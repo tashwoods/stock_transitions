@@ -136,6 +136,9 @@ if __name__ == '__main__':
       for n in degrees:
         print('hi')
         poly_fit(stock, n)
+    print('xgb predict')
     xgb_predict(stock)
+    print('xgb sequential predict')
+    xgb_sequential_predict(stock)
   
   print('----- {} seconds ---'.format(time.time() - start_time))
