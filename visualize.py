@@ -132,7 +132,7 @@ if __name__ == '__main__':
   for stock in stock_objects_list:
     if args.poly_reg == 1:
       print('DOING POLYNOMINAL FITS')
-      degrees = [1]
+      degrees = [1, 2, 3, 4]
       for n in degrees:
         print('hi')
         poly_fit(stock, n)
