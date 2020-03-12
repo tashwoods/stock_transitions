@@ -6,9 +6,6 @@ def worker_plots(stock_object):
   #stock_object.make_correlation_plots()
   stock_object.make_time_dependent_plots() #for each stock variable individually
 
-
-
-
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description = 'arg parser for visualize.py')
   parser.add_argument('-f', '--input_file', type = str, help = 'text file with input file names')
@@ -137,28 +134,42 @@ if __name__ == '__main__':
         print('hi')
         poly_fit(stock, n)
     print('xgb predict')
-    xgb_predict(stock)
+    xgb_predict(stock, 2, 2, 0.05, 0.01, 0.5)
     print('xgb sequential predict')
 
 
-    n_estimators = [2, 3, 4]
-    max_depth = [2, 3, 4, 5, 6]
-    learning_rate = [0.05, 0.07, 0.1]
-    min_child_weight = [0.01, 0.1, 1]
-    subsample = [0.5, 1]
-
+    n_estimators = [4]
+    max_depth = [4]
+    learning_rate = [0.001, 0.1, 0.5, 1]
+    min_child_weight = [0, 0.1, 0.5, 1]
+    subsample = [0.5]
+    scaled_rmse = []
+    unscaled_rmse = []
+    hyperparameter_array = []
     for x in itertools.product(n_estimators, max_depth, learning_rate, min_child_weight, subsample):
-      n = x[0]
-      d = x[1]
-      l = x[2]
-      min_child = x[3]
-      sub = x[4]
-      #xgb_sequential_predict(stock, n, d, l, min_child, sub)
-      #print('----------------------------')
-      #print('n_estimators:{} max_depth:{} learning_rate: {} min_child_weight: {} subsample: {} '.format(n, d, l, min_child, sub))
-      #print(stock.unscaled_model_names)
-      #print(stock.unscaled_errors)
+      print('----------------------------')
+      print(x)
+      print(x[0])
+      scaled_weekly_error, unscaled_weekly_error = xgb_sequential_predict(stock,x[0], x[1], x[2], x[3], x[4]) 
+      scaled_rmse.append(scaled_weekly_error)
+      hyperparameter_array.append(x)
+      unscaled_rmse.append(unscaled_weekly_error)
+      print('n_estimators:{} max_depth:{} learning_rate: {} min_child_weight: {} subsample: {} '.format(x[0], x[1], x[2], x[3], x[4]))
+      print(stock.unscaled_model_names)
+      print(stock.unscaled_errors)
       overlay_predictions(stock)
-    xgb_sequential_predict(stock, 4, 6, 0.1, 0.01, 0.5)
 
+  print('here')
+  print(hyperparameter_array)
+  print(list(hyperparameter_array[0]))
+  print(scaled_rmse)
+  x = [i[0] for i in hyperparameter_array]
+  y = [i[1] for i in hyperparameter_array]
+  data = pd.DataFrame({'x': x, 'y': y, 'z':scaled_rmse})
+  ax = sns.heatmap(data.pivot_table(index = 'y', columns = 'x', values = 'z'), annot = True, linewidths = 0.5)
+  ax.invert_yaxis()
+  ax.collections[0].colorbar.set_label('RMSE')
+  plt.xlabel('n_estimators')
+  plt.ylabel('max_depth')
+  plt.savefig('rmse_hyperparameter.pdf')
   print('----- {} seconds ---'.format(time.time() - start_time))

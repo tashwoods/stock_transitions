@@ -31,7 +31,7 @@ def xgb_sequential_predict(stock_object, n_estimators, max_depth, learning_rate,
       x_train_set = x_train_set.append(x_test_set.loc[i-1])
       y_train_set = y_train_set.append(y_test_set.loc[i-1])
 
-    model = XGBRegressor(n_estimators = n_estimators, max_depth = max_depth, learning_rate = learning_rate, min_child_weight = min_child_weight, subsample = subsample, colsample_bytree = stock_object.input_args.col_std, colsample_bylevel = stock_object.input_args.col_mean, gamma = 0.1)
+    model = XGBRegressor(n_estimators = n_estimators, max_depth = max_depth, learning_rate = learning_rate, min_child_weight = min_child_weight, subsample = subsample, colsample_bytree = stock_object.input_args.col_std, colsample_bylevel = stock_object.input_args.col_mean)
     model.fit(x_train_set.values, y_train_set.values)
     test_prediction.append(float(model.predict(x_test_set.iloc[i].values.reshape(1,-1))))
   
@@ -49,10 +49,12 @@ def xgb_sequential_predict(stock_object, n_estimators, max_depth, learning_rate,
 
   stock_object.add_unscaled_model("SeqXGBUnScaled", unscaled_prediction_set, unscaled_weekly_total_error)
   stock_object.add_scaled_model("SeqXGBScaled", scaled_prediction_set, scaled_weekly_total_error)
+
+  return scaled_weekly_total_error, unscaled_weekly_total_error
   
-def xgb_predict(stock_object):
+def xgb_predict(stock_object, n_estimators, max_depth, learning_rate, min_child_weight, subsample):
   x_train_set, y_train_set, x_test_set, y_test_set = get_x_y_test_train(stock_object)
-  model = XGBRegressor(seed = 100, n_estimators = 5, max_depth = 5, learning_rate=0.1, min_child_weight=1, subsample=1, colsample_bytree = stock_object.input_args.col_std, colsample_bylevel = stock_object.input_args.col_mean, gamma = 0.1)
+  model = XGBRegressor(n_estimators = n_estimators, max_depth = max_depth, learning_rate = learning_rate, min_child_weight = min_child_weight, subsample = subsample, colsample_bytree = stock_object.input_args.col_std, colsample_bylevel = stock_object.input_args.col_mean)
   model.fit(x_train_set, y_train_set)
 
   test_prediction = model.predict(x_test_set)
