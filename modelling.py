@@ -22,7 +22,7 @@ def get_scaled_prediction_dataframe(x_test_set, test_prediction, stock_object):
   prediction_dataframe[stock_object.input_args.predict_var] = test_prediction_scaled.values
   return prediction_dataframe
 
-def xgb_sequential_predict(stock_object):
+def xgb_sequential_predict(stock_object, n_estimators, max_depth, learning_rate, min_child_weight, subsample):
   x_train_set, y_train_set, x_test_set, y_test_set = get_x_y_test_train(stock_object)
   test_prediction = []
 
@@ -31,7 +31,7 @@ def xgb_sequential_predict(stock_object):
       x_train_set = x_train_set.append(x_test_set.loc[i-1])
       y_train_set = y_train_set.append(y_test_set.loc[i-1])
 
-    model = XGBRegressor(n_estimators = 5, max_depth = 5, learning_rate=0.1, min_child_weight=1, subsample=1, colsample_bytree = stock_object.input_args.col_std, colsample_bylevel = stock_object.input_args.col_mean, gamma = 0.1)
+    model = XGBRegressor(n_estimators = n_estimators, max_depth = max_depth, learning_rate = learning_rate, min_child_weight = min_child_weight, subsample = subsample, colsample_bytree = stock_object.input_args.col_std, colsample_bylevel = stock_object.input_args.col_mean, gamma = 0.1)
     model.fit(x_train_set.values, y_train_set.values)
     test_prediction.append(float(model.predict(x_test_set.iloc[i].values.reshape(1,-1))))
   
@@ -73,8 +73,6 @@ def poly_fit(stock_object, n):
   model = np.poly1d(np.polyfit(stock_object.train_set[stock_object.input_args.date_name], stock_object.train_set[stock_object.input_args.predict_var], n))
 
   myfit = np.polyfit(stock_object.train_set[stock_object.input_args.date_name], stock_object.train_set[stock_object.input_args.predict_var], n)
-  print('myfit')
-  print(myfit)
 
   x_train_set, y_train_set, x_test_set, y_test_set = get_x_y_test_train(stock_object)
   test_prediction = model(x_test_set[stock_object.input_args.date_name])

@@ -139,13 +139,26 @@ if __name__ == '__main__':
     print('xgb predict')
     xgb_predict(stock)
     print('xgb sequential predict')
-    xgb_sequential_predict(stock)
-    print('here')
-    print(stock.unscaled_model_names)
-    print(stock.unscaled_models)
-    print(stock.unscaled_errors)
-    overlay_predictions(stock)
-    print('now here')
 
-  
+
+    n_estimators = [2, 3, 4]
+    max_depth = [2, 3, 4, 5, 6]
+    learning_rate = [0.05, 0.07, 0.1]
+    min_child_weight = [0.01, 0.1, 1]
+    subsample = [0.5, 1]
+
+    for x in itertools.product(n_estimators, max_depth, learning_rate, min_child_weight, subsample):
+      n = x[0]
+      d = x[1]
+      l = x[2]
+      min_child = x[3]
+      sub = x[4]
+      #xgb_sequential_predict(stock, n, d, l, min_child, sub)
+      #print('----------------------------')
+      #print('n_estimators:{} max_depth:{} learning_rate: {} min_child_weight: {} subsample: {} '.format(n, d, l, min_child, sub))
+      #print(stock.unscaled_model_names)
+      #print(stock.unscaled_errors)
+      overlay_predictions(stock)
+    xgb_sequential_predict(stock, 4, 6, 0.1, 0.01, 0.5)
+
   print('----- {} seconds ---'.format(time.time() - start_time))
