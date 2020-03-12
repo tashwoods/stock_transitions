@@ -55,13 +55,16 @@ def make_test_train_datasets(file_name, args):
   train_set = formatted_data[:first_test_index]
   year_test_set = formatted_data[first_test_index:last_test_index]
   test_set = formatted_data[first_test_index:]
-  if args.test_set_averaged:
-    test_set = averaged_dataframe(test_set, args.days_in_week) #average over days in week for test set
+
 
   all_data_set_unscaled = formatted_data_unscaled
   train_set_unscaled = formatted_data_unscaled[:first_test_index]
   test_set_unscaled = formatted_data_unscaled[first_test_index:]
   year_test_set_unscaled = formatted_data_unscaled[first_test_index:last_test_index]
+
+  if args.test_set_averaged:
+    test_set = averaged_dataframe(test_set, args.days_in_week) #average over days in week for test set
+    test_set_unscaled = averaged_dataframe(test_set_unscaled, args.days_in_week)
 
   #Order train and test set by ascending date, likely not needed, but does not hurt
   train_set = train_set.sort_values(by = args.date_name)

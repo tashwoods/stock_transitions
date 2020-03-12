@@ -72,12 +72,16 @@ def xgb_predict(stock_object):
 def poly_fit(stock_object, n):
   model = np.poly1d(np.polyfit(stock_object.train_set[stock_object.input_args.date_name], stock_object.train_set[stock_object.input_args.predict_var], n))
 
+  myfit = np.polyfit(stock_object.train_set[stock_object.input_args.date_name], stock_object.train_set[stock_object.input_args.predict_var], n)
+  print('myfit')
+  print(myfit)
+
   x_train_set, y_train_set, x_test_set, y_test_set = get_x_y_test_train(stock_object)
   test_prediction = model(x_test_set[stock_object.input_args.date_name])
   scaled_prediction_set = get_scaled_prediction_dataframe(x_test_set, test_prediction, stock_object)
   unscaled_prediction_set = get_unscaled_data(scaled_prediction_set, stock_object)
 
-  scaled_weekly_total_error = get_general_errors_dataframes(test_prediction, y_test_set.to_numpy().tolist())
+  scaled_weekly_total_error = get_general_errors_dataframes(scaled_prediction_set[stock_object.input_args.predict_var], stock_object.test_set[stock_object.input_args.predict_var])
   unscaled_weekly_total_error = get_general_errors_dataframes(unscaled_prediction_set[stock_object.input_args.predict_var], stock_object.test_set_unscaled[stock_object.input_args.predict_var])
   print('SCALED: Degree: {} Weekly error: {}'.format(n, scaled_weekly_total_error))
   print('UNSCALED: Degree: {} Weekly error: {}'.format(n, unscaled_weekly_total_error))
@@ -91,10 +95,8 @@ def poly_fit(stock_object, n):
 def overlay_predictions(stock_object):
   #Overlay Unscaled Predictions, Test, and Train Sets
   for name, model, rmse in zip(stock_object.unscaled_model_names, stock_object.unscaled_models, stock_object.unscaled_errors):
-    print('hi')
     plt.plot(model[stock_object.input_args.date_name], model[stock_object.input_args.predict_var], label = '{} Fit RMSE = {}'.format(name, rmse))
   plt.plot(stock_object.test_set_unscaled[stock_object.input_args.date_name], stock_object.test_set_unscaled[stock_object.input_args.predict_var], label = 'Test set')
-  plt.plot(stock_object.train_set_unscaled[stock_object.input_args.date_name], stock_object.train_set_unscaled[stock_object.input_args.predict_var], label = 'Train Set')
 
   plt.legend()
   plt.xlabel(stock_object.input_args.date_name)
@@ -106,10 +108,8 @@ def overlay_predictions(stock_object):
 
   #Overlay Scaled Predictions, Test, and Train Sets
   for name, model, rmse in zip(stock_object.scaled_model_names, stock_object.scaled_models, stock_object.scaled_errors):
-    print('hi')
     plt.plot(model[stock_object.input_args.date_name], model[stock_object.input_args.predict_var], label = '{} Fit RMSE = {}'.format(name, rmse))
   plt.plot(stock_object.test_set[stock_object.input_args.date_name], stock_object.test_set[stock_object.input_args.predict_var], label = 'Test set')
-  plt.plot(stock_object.train_set[stock_object.input_args.date_name], stock_object.train_set[stock_object.input_args.predict_var], label = 'Train Set')
 
   plt.legend()
   plt.xlabel(stock_object.input_args.date_name)
