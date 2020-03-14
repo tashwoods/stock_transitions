@@ -31,7 +31,8 @@ if __name__ == '__main__':
   parser.add_argument('-drop_columns', '--drop_columns', nargs = '*', dest = 'drop_columns', default = [], help = 'list of columns to exclude from dataset')
   parser.add_argument('-N', '--number_files', type = int, dest = 'number_files', default = -1, help = 'number of files to randomly select from input file, if not specified or -1 all inputs files in input text file will be used')
   parser.add_argument('-min_file_size', '--min_file_size', type = int, dest = 'min_file_size', default = 100, help = 'minimum stock file size that will be used. This helps ignore empty files or files with few datapoints')
-  parser.add_argument('-scale_features', '--scale_features', type = int, dest = 'scale_features', default = 1, help = 'set to one to scale features using StandardScaler(), 0 to not')
+  parser.add_argument('-scale_features', '--scale_features', type = int, dest = 'scale_features', default = 1, help = 'set to one to scale features using StandardScaler(), 0 to not, using entire dataset')
+  parser.add_argument('-iteratively_scale_features', '--iteratively_scale_features', type = int, dest = 'iteratively_scale_features', default = 0, help = 'set to one to iteratively scale data points to train set plus all previous test set points')
   parser.add_argument('-combined_features', '--combined_features', type = int, dest = 'combined_features', default = 0, help = 'set to one to add combined features to dataset, zero to not')
   parser.add_argument('-anticipated_columns', '--anticipated_columns', type = str, dest = 'anticipated_columns', default = 'Date,Open,High,Low,Close,Volume,OpenInt', help = 'list of columns that are expected in text files')
   parser.add_argument('-poly_reg', '--poly_reg', type = int, dest = 'poly_reg', default = 0, help = 'set to one to model stock open price with polynominal regression')
@@ -140,8 +141,8 @@ if __name__ == '__main__':
 
     n_estimators = [4]
     max_depth = [4]
-    learning_rate = [0.001, 0.1, 0.5, 1]
-    min_child_weight = [0, 0.1, 0.5, 1]
+    learning_rate = [0.1]
+    min_child_weight = [1]
     subsample = [0.5]
     scaled_rmse = []
     unscaled_rmse = []

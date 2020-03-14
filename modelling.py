@@ -1,15 +1,44 @@
 from imported_libraries import *
 
-def get_x_y_test_train(stock_object):
+def get_x_y_test_train(stock_object, scale, i):
   predict_var = stock_object.input_args.predict_var
   date_name = stock_object.input_args.date_name
+  scaler = StandardScaler()
 
-  x_train_set = stock_object.train_set.drop(predict_var, axis = 1)
-  y_train_set = stock_object.train_set[[predict_var]]
-  x_test_set = stock_object.test_set.drop(predict_var, axis = 1)
-  y_test_set = stock_object.test_set[[predict_var]]
+  if scale == 0:#use scaled data from organize_data.py
+    train_set = stock_object.train_set
+    test_set = stock_object.test_set
 
-  return x_train_set, y_train_set, x_test_set, y_test_set
+  if scale == 1: #iteratively scale
+    print(i)
+    train_set = stock_object.train_set_unscaled
+    test_set = stock_object.test_set_unscaled
+
+    if i != 0:
+      if i == 1:
+        array_to_add = test_set.iloc[0]
+        df_to_add = pd.DataFrame(array_to_add, index = test_set.index, columns = test_set.columns)
+        train_set = train_set.append(df_to_add)
+        test_set = test_set.iloc[i:]
+      else:
+        train_set = train_set.append(test_set.iloc[:i-1])
+        test_set = test_set.iloc[i:]
+
+    print('train_set_length: {}'.format(len(train_set.index)))
+    print('test_set_length: {}'.format(len(test_set.index)))
+    train_set_features = scaler.fit_transform(train_set)
+    test_set_features = scaler.transform(test_set)
+    final_train_set = pd.DataFrame(train_set_features, index = train_set.index, columns = train_set.columns)
+    final_test_set = pd.DataFrame(test_set_features, index = test_set.index, columns = test_set.columns)
+    train_set = final_train_set
+    test_set = final_test_set
+
+  x_train_set = train_set.drop(predict_var, axis = 1)
+  y_train_set = train_set[[predict_var]]
+  x_test_set = test_set.drop(predict_var, axis = 1)
+  y_test_set = test_set[[predict_var]]
+
+  return x_train_set, y_train_set, x_test_set, y_test_set, scaler
 
 def get_unscaled_data(dataset, stock_object):
   array_data = stock_object.scaler.inverse_transform(dataset)
@@ -23,29 +52,32 @@ def get_scaled_prediction_dataframe(x_test_set, test_prediction, stock_object):
   return prediction_dataframe
 
 def xgb_sequential_predict(stock_object, n_estimators, max_depth, learning_rate, min_child_weight, subsample):
-  x_train_set, y_train_set, x_test_set, y_test_set = get_x_y_test_train(stock_object)
+  x_train_set0, y_train_set0, x_test_set0, y_test_set0, scaler = get_x_y_test_train(stock_object, 0, 0)
   test_prediction = []
+  test_predicition_unscaled = []
 
-  for i in range(len(x_test_set.index)):
-    if i != 0:
-      x_train_set = x_train_set.append(x_test_set.loc[i-1])
-      y_train_set = y_train_set.append(y_test_set.loc[i-1])
-
+  for i in range(len(stock_object.test_set.index)):
+    x_train_set, y_train_set, x_test_set, y_test_set, scaler = get_x_y_test_train(stock_object, 1, i)
     model = XGBRegressor(n_estimators = n_estimators, max_depth = max_depth, learning_rate = learning_rate, min_child_weight = min_child_weight, subsample = subsample, colsample_bytree = stock_object.input_args.col_std, colsample_bylevel = stock_object.input_args.col_mean)
     model.fit(x_train_set.values, y_train_set.values)
-    test_prediction.append(float(model.predict(x_test_set.iloc[i].values.reshape(1,-1))))
+    prediction = float(model.predict(x_test_set.iloc[0].values.reshape(1,-1)))
+    test_prediction.append(prediction)#not sure that should be zero natasha
+    test_prediction_unscaled.append(scaler(prediction))
   
   test_prediction = np.asarray(test_prediction)
-  scaled_prediction_set = get_scaled_prediction_dataframe(x_test_set, test_prediction, stock_object)
-  unscaled_prediction_set = get_unscaled_data(scaled_prediction_set, stock_object)
+  print('len test_set {}'.format(len(x_test_set)))
+  print('len test_prediction {}'.format(len(test_prediction)))
+  scaled_prediction_set = get_scaled_prediction_dataframe(x_test_set0, test_prediction, stock_object)
+  #unscaled_prediction_set = get_unscaled_data(scaled_prediction_set, stock_object)
 
-  scaled_weekly_total_error = get_general_errors_dataframes(test_prediction, y_test_set.to_numpy().tolist())
+
+  scaled_weekly_total_error = get_general_errors_dataframes(test_prediction, y_test_set0.to_numpy().tolist())
   unscaled_weekly_total_error = get_general_errors_dataframes(unscaled_prediction_set[stock_object.input_args.predict_var], stock_object.test_set_unscaled[stock_object.input_args.predict_var])
   print('UnScaled XGB error: {}'.format(unscaled_weekly_total_error))
   print('Scaled XGB error: {}'.format(scaled_weekly_total_error))
 
-  prediction_overlay_plot(stock_object.test_set, stock_object.train_set, scaled_prediction_set, scaled_weekly_total_error, 'XGBScaled', stock_object)
-  prediction_overlay_plot(stock_object.test_set_unscaled, stock_object.train_set_unscaled, unscaled_prediction_set, unscaled_weekly_total_error, 'XGBUnScaled', stock_object)
+  prediction_overlay_plot(stock_object.test_set, stock_object.train_set, scaled_prediction_set, scaled_weekly_total_error, 'SeqXGBScaled', stock_object)
+  prediction_overlay_plot(stock_object.test_set_unscaled, stock_object.train_set_unscaled, unscaled_prediction_set, unscaled_weekly_total_error, 'SeqXGBUnScaled', stock_object)
 
   stock_object.add_unscaled_model("SeqXGBUnScaled", unscaled_prediction_set, unscaled_weekly_total_error)
   stock_object.add_scaled_model("SeqXGBScaled", scaled_prediction_set, scaled_weekly_total_error)
@@ -53,7 +85,7 @@ def xgb_sequential_predict(stock_object, n_estimators, max_depth, learning_rate,
   return scaled_weekly_total_error, unscaled_weekly_total_error
   
 def xgb_predict(stock_object, n_estimators, max_depth, learning_rate, min_child_weight, subsample):
-  x_train_set, y_train_set, x_test_set, y_test_set = get_x_y_test_train(stock_object)
+  x_train_set, y_train_set, x_test_set, y_test_set, scaler = get_x_y_test_train(stock_object, 0, 0)
   model = XGBRegressor(n_estimators = n_estimators, max_depth = max_depth, learning_rate = learning_rate, min_child_weight = min_child_weight, subsample = subsample, colsample_bytree = stock_object.input_args.col_std, colsample_bylevel = stock_object.input_args.col_mean)
   model.fit(x_train_set, y_train_set)
 
@@ -76,7 +108,7 @@ def poly_fit(stock_object, n):
 
   myfit = np.polyfit(stock_object.train_set[stock_object.input_args.date_name], stock_object.train_set[stock_object.input_args.predict_var], n)
 
-  x_train_set, y_train_set, x_test_set, y_test_set = get_x_y_test_train(stock_object)
+  x_train_set, y_train_set, x_test_set, y_test_set, scaler = get_x_y_test_train(stock_object, 0)
   test_prediction = model(x_test_set[stock_object.input_args.date_name])
   scaled_prediction_set = get_scaled_prediction_dataframe(x_test_set, test_prediction, stock_object)
   unscaled_prediction_set = get_unscaled_data(scaled_prediction_set, stock_object)

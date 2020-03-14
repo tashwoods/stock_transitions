@@ -49,13 +49,30 @@ def make_test_train_datasets(file_name, args):
     scaler = StandardScaler()
     scaled_features = scaler.fit_transform(formatted_data.values)
     formatted_data = pd.DataFrame(scaled_features, index = formatted_data.index, columns = formatted_data.columns)
+  '''
+  if args.iteratively_scale_features == 1:
+    train_set = formatted_data[:first_test_index]
+    test_set = formatted_data[first_test_index:]
 
+    scaler = []
+    for i in range(len(test_set.index)):
+      print(i)
+      print(test_set.iloc[:i-1])
+      if i == 0:
+        dataset_used_to_normalize = train_set
+      else:
+        dataset_used_to_normalize = train_set.append(test_set.iloc[:i-1])
+      print(dataset_used_to_normalize)
+      this_scaler = StandardScaler()
+      scaled_features = this_scaler.fit_transform(dataset_used_to_normalize)
+      indiv_train_set = pd.DataFrame(scaled_features, index = dataset_used_to_normalize.index, columns = dataset_used_to_normalize.columns)
+      scaler.append(this_scaler)
+  ''' 
   #Extract train and test set
   all_data_set = formatted_data
   train_set = formatted_data[:first_test_index]
-  year_test_set = formatted_data[first_test_index:last_test_index]
+  year_test_set = formatted_data[first_test_index - 1:last_test_index]
   test_set = formatted_data[first_test_index:]
-
 
   all_data_set_unscaled = formatted_data_unscaled
   train_set_unscaled = formatted_data_unscaled[:first_test_index]
