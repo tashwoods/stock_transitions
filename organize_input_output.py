@@ -15,7 +15,6 @@ def averaged_dataframe(dataset, days):
     this_dataframe = dataset.iloc[indices[i]:indices[i+1]]
     dfs.append(this_dataframe.mean(axis=0))
   combined_dataframe = pd.concat(dfs,axis=1).T
-
   return combined_dataframe
 
 def averaged_dataframe_array(dataset, days):
@@ -24,75 +23,39 @@ def averaged_dataframe_array(dataset, days):
 
 def make_test_train_datasets(file_name, args):
   #Check metadata of given stock
-  formatted_data = get_data(file_name, args.date_name)
+  formatted_data_unscaled = get_data(file_name, args.date_name)
   if len(args.drop_columns) > 0:
-    formatted_data = formatted_data.drop(args.drop_columns, axis = 1)
+    formatted_data_unscaled = formatted_data_unscaled.drop(args.drop_columns, axis = 1)
 
   if args.combined_features == 1:
-    formatted_data = add_attributes(formatted_data)
+    formatted_data_unscaled = add_attributes(formatted_data_unscaled)
 
-  #put predicted variable at end of dataframe to make using StandardScaler easier later
-  columns = list(formatted_data.columns)
+  #Predict_var at end of dataframe to make using StandardScaler easier later
+  columns = list(formatted_data_unscaled.columns)
   columns.remove(args.predict_var)
   columns.append(args.predict_var)
-  formatted_data = formatted_data[columns]
+  formatted_data_unscaled = formatted_data_unscaled[columns]
 
-  #get index of test date split before possibly scaling data, which will make this more difficult to do
+  #Get indicies for test and train sets
   first_test_date = get_day_of_year(args.year_test_set + args.month_test_set + args.day_test_set)
   string_last_test_date = str(int(args.year_test_set) + 1 ) + '0101'
   last_test_date = get_day_of_year(str(int(args.year_test_set) + 1 ) + '0101') #Natasha this is hard-coded to only test over a year span
-  first_test_index = (formatted_data[args.date_name] >= first_test_date).idxmax()
-  last_test_index = (formatted_data[args.date_name] >= last_test_date).idxmax()
+  first_test_index = (formatted_data_unscaled[args.date_name] >= first_test_date).idxmax()
+  last_test_index = (formatted_data_unscaled[args.date_name] >= last_test_date).idxmax()
 
-  formatted_data_unscaled = formatted_data
-  if args.scale_features == 1:
-    scaler = StandardScaler()
-    scaled_features = scaler.fit_transform(formatted_data.values)
-    formatted_data = pd.DataFrame(scaled_features, index = formatted_data.index, columns = formatted_data.columns)
-  '''
-  if args.iteratively_scale_features == 1:
-    train_set = formatted_data[:first_test_index]
-    test_set = formatted_data[first_test_index:]
-
-    scaler = []
-    for i in range(len(test_set.index)):
-      print(i)
-      print(test_set.iloc[:i-1])
-      if i == 0:
-        dataset_used_to_normalize = train_set
-      else:
-        dataset_used_to_normalize = train_set.append(test_set.iloc[:i-1])
-      print(dataset_used_to_normalize)
-      this_scaler = StandardScaler()
-      scaled_features = this_scaler.fit_transform(dataset_used_to_normalize)
-      indiv_train_set = pd.DataFrame(scaled_features, index = dataset_used_to_normalize.index, columns = dataset_used_to_normalize.columns)
-      scaler.append(this_scaler)
-  ''' 
   #Extract train and test set
-  all_data_set = formatted_data
-  train_set = formatted_data[:first_test_index]
-  year_test_set = formatted_data[first_test_index - 1:last_test_index]
-  test_set = formatted_data[first_test_index:]
-
-  all_data_set_unscaled = formatted_data_unscaled
   train_set_unscaled = formatted_data_unscaled[:first_test_index]
   test_set_unscaled = formatted_data_unscaled[first_test_index:]
-  year_test_set_unscaled = formatted_data_unscaled[first_test_index:last_test_index]
 
+  #Average test set over user defined days_in_week if test_set_averaged true
   if args.test_set_averaged:
-    test_set = averaged_dataframe(test_set, args.days_in_week) #average over days in week for test set
     test_set_unscaled = averaged_dataframe(test_set_unscaled, args.days_in_week)
 
-  #Order train and test set by ascending date, likely not needed, but does not hurt
-  train_set = train_set.sort_values(by = args.date_name)
-  test_set = test_set.sort_values(by = args.date_name)
-  year_test_set = year_test_set.sort_values(by = args.date_name)
-
+  #Order test and train set by date
   train_set_unscaled = train_set_unscaled.sort_values(by = args.date_name)
   test_set_unscaled = test_set_unscaled.sort_values(by = args.date_name)
-  year_test_set = year_test_set_unscaled.sort_values(by = args.date_name)
   
-  return test_set_unscaled, train_set_unscaled, year_test_set_unscaled, all_data_set_unscaled, test_set, train_set, year_test_set, all_data_set, scaler
+  return test_set_unscaled, train_set_unscaled, formatted_data_unscaled
 
 def get_stock_name(file_name):
   if file_name.endswith('.us.txt'):

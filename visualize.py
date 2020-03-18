@@ -59,68 +59,66 @@ if __name__ == '__main__':
   #Organize and format input and output
   make_output_dir(args.output_dir)
   start_time = time.time()
- 
   stock_objects_list = list() 
   stock_objects_names = list() 
-
-  input_file = open(args.input_file, "r")
-
   available_files = []
+
+  #Process input file list
+  input_file = open(args.input_file, "r")
   for file_name in input_file:
     if len(file_name.strip()) > 0:
       file_name = file_name.rstrip()
-      print(file_name)
-      if(os.stat(file_name).st_size > args.min_file_size): #ignore files with less than ~5 entries, as they are unlikely to be informative
-        with open(file_name, 'r') as in_file:
+      if(os.stat(file_name).st_size > args.min_file_size): #ignore files smaller than min_file_size
+        with open(file_name, 'r') as in_file: #iterate over remaining files
           lines = in_file.read().splitlines()
+          #Check if date range file meets user specified date range and variable names
           columns_line = lines[0]
           first_line = lines[1]
           last_line = lines[-1]
-          if columns_line == args.anticipated_columns: #ignore files with missing columns
+          if columns_line == args.anticipated_columns: #ignore files missing columns
             first_line = first_line[:first_line.find(',')].split('-')
             last_line = last_line[:last_line.find(',')].split('-')
             first_line = [int(i) for i in first_line]
             last_line = [int(i) for i in last_line]
-
-            if first_line[0] < int(args.min_year) or first_line[0] == int(args.min_year) and first_line[1] == int(args.min_month): #require first date to be 01/08 or earlier
-              if last_line[0] > int(args.max_year) or last_line[0] == int(args.max_year) and last_line[1] == int(args.max_month): #require last date to be 10/16 or later
+            if first_line[0] < int(args.min_year) or first_line[0] == int(args.min_year) and first_line[1] == int(args.min_month):
+              if last_line[0] > int(args.max_year) or last_line[0] == int(args.max_year) and last_line[1] == int(args.max_month):
                 available_files.append(file_name)
             else:
-              print('{} does not have stock data from the minimum date range {}/{} - {}/{}'.format(file_name, args.min_month, args.min_year, args.max_month, args.max_year))
+              print('{} fails date range rqmt {}/{}-{}/{}'.format(file_name, args.min_month, args.min_year, args.max_month, args.max_year))
           else:
-            print('{} is missing some -anticipated_columns, skipping.'.format(file_name))
+            print('{} missing some -anticipated_columns, skipping.'.format(file_name))
 
-  if args.number_files != -1:
+  if args.number_files != -1: #if number_files != -1 randomly select number_files specified
     print('selecting {} random files from {} input files'.format(args.number_files, len(available_files)))
     available_files = stock_random.sample(available_files, args.number_files)
- 
+
+  #For each valid file create output dir and stock_object and create meta-lists of these
   for i in range(len(available_files)):
     file_name = available_files[i]
     file_name = file_name.rstrip()
     make_nested_dir(args.output_dir, get_stock_name(file_name))
-    test_set_unscaled,train_set_unscaled,year_test_set_unscaled, all_data_set_unscaled, test_set, train_set, year_test_set, all_data_set, scaler = make_test_train_datasets(file_name, args)
-    if type(test_set) != None and type(train_set) != None:
-      stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set_unscaled, train_set_unscaled, year_test_set_unscaled, all_data_set_unscaled, test_set, train_set, year_test_set, all_data_set, scaler, args))
+    test_set_unscaled, train_set_unscaled, all_data_set_unscaled = make_test_train_datasets(file_name, args)
+    if type(test_set_unscaled) != None and type(train_set_unscaled) != None:
+      stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set_unscaled, train_set_unscaled, all_data_set_unscaled, args))
       stock_objects_names.append(get_stock_name(file_name))
       if i % 100 == 0:
         print('Datasets made for {} of {} files in {} seconds.'.format(i, len(available_files), time.time() - start_time))
-
-  print('number of items actually selected: {}'.format(len(stock_objects_list)))
+  print('number of items selected: {}'.format(len(stock_objects_list)))
 
   #Plot Data
   if args.indiv_plots == 1:
+    #Create multiple threads for speedy plotting
     pool = multiprocessing.Pool(args.max_number_processes)
     result_list = pool.map_async(worker_plots, stock_objects_list)
     pool.close()
     pool.join()
 
-  if args.overlay_stock_plots == 1:
-    for var in stock_objects_list[0].train_set.columns: #iterate over stock variables
+  if args.overlay_stock_plots == 1: #overlay time-dependent variable plots for all stocks
+    for var in stock_objects_list[0].train_set_unscaled.columns: #iterate over stock variables
       color = cm.rainbow(np.linspace(0,1,len(stock_objects_list)))
       for stock,c in zip(range(len(stock_objects_list)), color): #iterate over stocks
         if var != args.date_name:
-          plt.plot('Date', var, data = stock_objects_list[stock].train_set, markerfacecolor = c, linewidth = 0.4, label = stock_objects_list[stock].stock_name)
-      #plt.legend()
+          plt.plot('Date', var, data = stock_objects_list[stock].train_set_unscaled, markerfacecolor = c, linewidth = 0.4, label = stock_objects_list[stock].stock_name)
       plt.xlabel('Date')
       plt.ylabel(var)
       plt.savefig(args.output_dir + '/stock_' + var + '_overlay.pdf')    
@@ -129,14 +127,13 @@ if __name__ == '__main__':
   #Model Data
   for stock in stock_objects_list:
     if args.poly_reg == 1:
-      print('DOING POLYNOMINAL FITS')
       degrees = [1, 2, 3, 4]
       for n in degrees:
-        print('hi')
         poly_fit(stock, n)
-    print('xgb predict')
-    xgb_predict(stock, 658, 60, .69)
-    print('xgb sequential predict')
+        
+    print('Simple XGB Fit')
+    xgb_predict(stock, 100, 70, .13, .96, 0.4)
+    print('XGB Sequential Fit')
     n_estimators = [100] #more is better
     max_depth = [70] #for estimators = 10, 20 was best
     learning_rate = [.13] #0.9 looked best

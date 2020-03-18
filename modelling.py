@@ -5,27 +5,27 @@ def get_x_y_test_train(stock_object, scale, i):
   date_name = stock_object.input_args.date_name
   scaler = StandardScaler()
 
-  if scale == -1:
+  if scale == -1: #do no scale at all
     train_set = stock_object.train_set_unscaled
     test_set = stock_object.test_set_unscaled
 
-  if scale == 0:#use scaled data from organize_data.py
-    train_set = stock_object.train_set
-    test_set = stock_object.test_set
+  else:
+    if scale == 0: #scale test set to train set
+      train_set = stock_object.train_set_unscaled
+      test_set = stock_object.test_set_unscaled
 
-  if scale == 1: #iteratively scale
-    train_set = stock_object.train_set_unscaled
-    test_set = stock_object.test_set_unscaled
-
-    if i != 0:
-      if i == 1:
-        array_to_add = test_set.iloc[0]
-        df_to_add = pd.DataFrame(array_to_add, index = test_set.index, columns = test_set.columns)
-        train_set = train_set.append(df_to_add)
-        test_set = test_set.iloc[i:]
-      else:
-        train_set = train_set.append(test_set.iloc[:i-1])
-        test_set = test_set.iloc[i:]
+    if scale == 1: #iteratively scale test set to train set
+      train_set = stock_object.train_set_unscaled
+      test_set = stock_object.test_set_unscaled
+      if i != 0:
+        if i == 1:
+          array_to_add = test_set.iloc[0]
+          df_to_add = pd.DataFrame(array_to_add, index = test_set.index, columns = test_set.columns)
+          train_set = train_set.append(df_to_add)
+          test_set = test_set.iloc[i:]
+        else:
+          train_set = train_set.append(test_set.iloc[:i-1])
+          test_set = test_set.iloc[i:]
 
     train_set_features = scaler.fit_transform(train_set)
     test_set_features = scaler.transform(test_set)
@@ -41,8 +41,8 @@ def get_x_y_test_train(stock_object, scale, i):
 
   return x_train_set, y_train_set, x_test_set, y_test_set, scaler
 
-def get_unscaled_data(dataset, stock_object):
-  array_data = stock_object.scaler.inverse_transform(dataset)
+def get_unscaled_data(dataset, stock_object, scaler):
+  array_data = scaler.inverse_transform(dataset)
   formatted_data = pd.DataFrame(array_data, index = dataset.index, columns = dataset.columns)
   return formatted_data
 
@@ -54,88 +54,83 @@ def get_prediction_dataframe(x_test_set, test_prediction, stock_object):
 
 def xgb_sequential_predict(stock_object, n_estimators, max_depth, learning_rate, min_child_weight, subsample):
   x_train_set0, y_train_set0, x_test_set0, y_test_set0, scaler = get_x_y_test_train(stock_object, -1, 0)
+  predict_var = stock_object.input_args.predict_var
   test_prediction = []
   test_prediction_unscaled = []
-  predict_var = stock_object.input_args.predict_var
-
-  for i in range(len(stock_object.test_set.index)):
-    #Select train and test sets and train
+  #iterate through test set
+  for i in range(len(stock_object.test_set_unscaled.index)):
+    #Iteratively augment, scale and model test set
     x_train_set, y_train_set, x_test_set, y_test_set, scaler = get_x_y_test_train(stock_object, 1, i)
     model = XGBRegressor(n_estimators = n_estimators, max_depth = max_depth, learning_rate = learning_rate, min_child_weight = min_child_weight, subsample = subsample, colsample_bytree = stock_object.input_args.col_std, colsample_bylevel = stock_object.input_args.col_mean)
     model.fit(x_train_set.values, y_train_set.values)
-
-    #Predict stock price
-    prediction = float(model.predict(x_test_set.iloc[0].values.reshape(1,-1)))
+    #Predict stock price for only first entry in test set, as this is an iterative BDT
+    prediction_array = x_test_set.iloc[0]
+    prediction = float(model.predict(prediction_array.values.reshape(1,-1)))
     test_prediction.append(prediction)
     #Calculate Unscaled Prediction
-    prediction_array = x_test_set.iloc[0]
     estimate_array = pd.Series([prediction], index = [predict_var])
     prediction_array = prediction_array.append(estimate_array)
     unscaled_df = scaler.inverse_transform(prediction_array)
-    test_prediction_unscaled.append(unscaled_df[-1])
+    test_prediction_unscaled.append(unscaled_df[-1]) #only add predict var estimate to array
     
   test_prediction = np.asarray(test_prediction)
   test_prediction_unscaled = np.asarray(test_prediction_unscaled)
-
-  #scaled_prediction_set = get_prediction_dataframe(x_test_set0, test_prediction, stock_object)
   unscaled_prediction_set = get_prediction_dataframe(x_test_set0, test_prediction_unscaled, stock_object)
 
-  #scaled_weekly_total_error = get_general_errors_dataframes(test_prediction, y_test_set0.to_numpy().tolist())
-  scaled_weekly_total_error = 0
+  #Obtain and Save Modelling Errors
   unscaled_weekly_total_error = get_general_errors_dataframes(test_prediction_unscaled, y_test_set0.to_numpy().tolist())
   print('UnScaled XGB error: {}'.format(unscaled_weekly_total_error))
-  #print('Scaled XGB error: {}'.format(scaled_weekly_total_error))
-
-  #prediction_overlay_plot(stock_object.test_set, stock_object.train_set, scaled_prediction_set, scaled_weekly_total_error, 'SeqXGBScaled', stock_object)
-  prediction_overlay_plot(stock_object.test_set_unscaled, stock_object.train_set_unscaled, unscaled_prediction_set, unscaled_weekly_total_error, 'SeqXGBUnScaled', stock_object)
-
   name = "SeqXGBUnScaled_E"+ str(n_estimators) + "_E" + str(max_depth) + "_L" + str(learning_rate) + "_M" + str(min_child_weight) + "_S" + str(subsample)
   stock_object.add_unscaled_model(name, unscaled_prediction_set, unscaled_weekly_total_error)
-  #stock_object.add_scaled_model("SeqXGBScaled", scaled_prediction_set, scaled_weekly_total_error)
+  #Plot
+  prediction_overlay_plot(stock_object.test_set_unscaled, stock_object.train_set_unscaled, unscaled_prediction_set, unscaled_weekly_total_error, 'SeqXGBUnScaled', stock_object)
 
-  return -1.0 * unscaled_weekly_total_error
+  return unscaled_weekly_total_error
   
 def xgb_predict(stock_object, n_estimators, max_depth, learning_rate, min_child_weight=1, subsample=1):
+  #Scale, split and model data
   x_train_set, y_train_set, x_test_set, y_test_set, scaler = get_x_y_test_train(stock_object, 0, 0)
   model = XGBRegressor(n_estimators = n_estimators, max_depth = max_depth, learning_rate = learning_rate, min_child_weight = min_child_weight, subsample = subsample, colsample_bytree = stock_object.input_args.col_std, colsample_bylevel = stock_object.input_args.col_mean)
   model.fit(x_train_set, y_train_set)
-
   test_prediction = model.predict(x_test_set)
   scaled_prediction_set = get_prediction_dataframe(x_test_set, test_prediction, stock_object)
-  unscaled_prediction_set = get_unscaled_data(scaled_prediction_set, stock_object)
+  unscaled_prediction_set = get_unscaled_data(scaled_prediction_set, stock_object, scaler)
 
+  #Print and Save Modelling Errors
   scaled_weekly_total_error = get_general_errors_dataframes(test_prediction, y_test_set.to_numpy().tolist())
   unscaled_weekly_total_error = get_general_errors_dataframes(unscaled_prediction_set[stock_object.input_args.predict_var], stock_object.test_set_unscaled[stock_object.input_args.predict_var])
+  stock_object.add_unscaled_model("XGBUnScaled", unscaled_prediction_set, unscaled_weekly_total_error)
   print('UnScaled XGB error: {}'.format(unscaled_weekly_total_error))
   print('Scaled XGB error: {}'.format(scaled_weekly_total_error))
 
-  prediction_overlay_plot(stock_object.test_set, stock_object.train_set, scaled_prediction_set, scaled_weekly_total_error, 'XGBScaled', stock_object)
+  #Plot Results 
   prediction_overlay_plot(stock_object.test_set_unscaled, stock_object.train_set_unscaled, unscaled_prediction_set, unscaled_weekly_total_error, 'XGBUnScaled', stock_object)
-  stock_object.add_unscaled_model("XGBUnScaled", unscaled_prediction_set, unscaled_weekly_total_error)
-  stock_object.add_scaled_model("XGBScaled", scaled_prediction_set, scaled_weekly_total_error)
 
   return mean_squared_error(y_test_set, test_prediction)
 
 def poly_fit(stock_object, n):
-  model = np.poly1d(np.polyfit(stock_object.train_set[stock_object.input_args.date_name], stock_object.train_set[stock_object.input_args.predict_var], n))
+  #Simplify variable names
+  predict_var = stock_object.input_args.predict_var
+  date_name = stock_object.input_args.date_name
 
-  myfit = np.polyfit(stock_object.train_set[stock_object.input_args.date_name], stock_object.train_set[stock_object.input_args.predict_var], n)
-
-  x_train_set, y_train_set, x_test_set, y_test_set, scaler = get_x_y_test_train(stock_object, 0)
-  test_prediction = model(x_test_set[stock_object.input_args.date_name])
+  #Scale, split, model data
+  test_set, train_set, x_train_set, y_train_set, x_test_set, y_test_set, scaler = get_x_y_test_train(stock_object, -1, 0)
+  model = np.poly1d(np.polyfit(train_set[date_name], train_set[predict_var], n))
+  test_prediction = model(x_test_set[date_name])
   scaled_prediction_set = get_prediction_dataframe(x_test_set, test_prediction, stock_object)
-  unscaled_prediction_set = get_unscaled_data(scaled_prediction_set, stock_object)
+  unscaled_prediction_set = get_unscaled_data(scaled_prediction_set, stock_object, scaler)
 
-  scaled_weekly_total_error = get_general_errors_dataframes(scaled_prediction_set[stock_object.input_args.predict_var], stock_object.test_set[stock_object.input_args.predict_var])
-  unscaled_weekly_total_error = get_general_errors_dataframes(unscaled_prediction_set[stock_object.input_args.predict_var], stock_object.test_set_unscaled[stock_object.input_args.predict_var])
+  #Obtain and Save Modelling Errors
+  scaled_weekly_total_error = get_general_errors_dataframes(scaled_prediction_set[predict_var], stock_object.test_set[predict_var])
+  unscaled_weekly_total_error = get_general_errors_dataframes(unscaled_prediction_set[predict_var], stock_object.test_set_unscaled[predict_var])
+  stock_object.add_unscaled_model('Poly' + str(n) + 'UnScaled' , unscaled_prediction_set, unscaled_weekly_total_error)
+  stock_object.add_scaled_model('Poly' + str(n) + 'Scaled', scaled_prediction_set, scaled_weekly_total_error)
   print('SCALED: Degree: {} Weekly error: {}'.format(n, scaled_weekly_total_error))
   print('UNSCALED: Degree: {} Weekly error: {}'.format(n, unscaled_weekly_total_error))
 
+  #Plot Results
   prediction_overlay_plot(stock_object.test_set_unscaled, stock_object.train_set_unscaled, unscaled_prediction_set, unscaled_weekly_total_error, str(n) + 'PolyUnscaled', stock_object) 
-  prediction_overlay_plot(stock_object.test_set, stock_object.train_set, scaled_prediction_set, scaled_weekly_total_error, str(n) + 'PolyScaled', stock_object)
-
-  stock_object.add_unscaled_model('Poly' + str(n) + 'UnScaled' , unscaled_prediction_set, unscaled_weekly_total_error)
-  stock_object.add_scaled_model('Poly' + str(n) + 'Scaled', scaled_prediction_set, scaled_weekly_total_error)
+  prediction_overlay_plot(test_set, train_set, scaled_prediction_set, scaled_weekly_total_error, str(n) + 'PolyScaled', stock_object)
 
 def overlay_predictions(stock_object):
   #Overlay Unscaled Predictions, Test, and Train Sets
@@ -154,6 +149,7 @@ def overlay_predictions(stock_object):
   plt.savefig(stock_object.input_args.output_dir + '/' + stock_object.stock_name + '/stock_models_all_unscaled_' + stock_object.stock_name + '_overlay.pdf')    
   plt.close('all')
 
+  '''
   #Overlay Scaled Predictions, Test, and Train Sets
   for name, model, rmse in zip(stock_object.scaled_model_names, stock_object.scaled_models, stock_object.scaled_errors):
     plt.plot(model[stock_object.input_args.date_name], model[stock_object.input_args.predict_var], label = '{} Fit RMSE = {}'.format(name, rmse), alpha = alpha, linewidth = linewidth)
@@ -166,7 +162,7 @@ def overlay_predictions(stock_object):
   plt.legend(loc = leg_loc, borderaxespad=0., prop={'size': 6})
   plt.savefig(stock_object.input_args.output_dir + '/' + stock_object.stock_name + '/stock_models_all_scaled_' + stock_object.stock_name + '_overlay.pdf')    
   plt.close('all')
-
+  '''
 
 def prediction_overlay_plot(test_set, train_set, model, rmse, name, stock_object):
   plt.plot(test_set[stock_object.input_args.date_name], test_set[stock_object.input_args.predict_var], label = 'Test set')

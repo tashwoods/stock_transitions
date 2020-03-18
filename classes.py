@@ -7,25 +7,16 @@ class ThresholdMonitor(ConvergenceMonitor):
     
 
 class stock_object_class:
-  def __init__(self, file_name, stock_name, test_set_unscaled, train_set_unscaled, year_test_set_unscaled, all_data_set_unscaled, test_set, train_set, year_test_set, all_data_set, scaler, input_args):
+  def __init__(self, file_name, stock_name, test_set_unscaled, train_set_unscaled, all_data_set_unscaled, input_args):
     self.file_name = file_name
     self.stock_name = stock_name
     self.test_set_unscaled = test_set_unscaled
     self.train_set_unscaled = train_set_unscaled
-    self.year_test_set_unscaled = year_test_set_unscaled
     self.all_data_set_unscaled = all_data_set_unscaled
     self.input_args = input_args
-    self.test_set = test_set
-    self.train_set = train_set
-    self.year_test_set = year_test_set
-    self.all_data_set = all_data_set
-    self.scaler = scaler
     self.unscaled_model_names = []
     self.unscaled_models = []
     self.unscaled_errors = []
-    self.scaled_model_names = []
-    self.scaled_models = []
-    self.scaled_errors = []
 
   def add_unscaled_model(self, name, model, error):
     self.unscaled_model_names.append(name)
@@ -38,7 +29,7 @@ class stock_object_class:
       
 
   def make_histograms(self, var):
-    dataset = self.train_set
+    dataset = self.train_set_unscaled
     fig, ax = plt.subplots()
     ax.hist(dataset[var])
     plt.xlabel(var)
@@ -51,35 +42,35 @@ class stock_object_class:
     plt.close('all')
 
   def make_overlay_plot(self):
-    for var in self.train_set.columns:
+    for var in self.train_set_unscaled.columns:
       if var != self.input_args.date_name and var!= self.input_args.volume_name and var!= self.input_args.open_int_name:
-        plt.plot(self.input_args.date_name, var, data = self.train_set, linewidth = 0.2)
+        plt.plot(self.input_args.date_name, var, data = self.train_set_unscaled, linewidth = 0.2)
         plt.title(self.stock_name + ': Stock Variables Overlay')
     plt.legend()
     plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/stock_variables_overlay.pdf')
 
   def make_scatter_plots(self):
-    for i in range(len(self.train_set.columns) - 1):
-      for j in range(i+1, len(self.train_set.columns) - 1):
-        var1 = self.train_set.iloc[:,i]
-        var2 = self.train_set.iloc[:,j]
+    for i in range(len(self.train_set_unscaled.columns) - 1):
+      for j in range(i+1, len(self.train_set_unscaled.columns) - 1):
+        var1 = self.train_set_unscaled.iloc[:,i]
+        var2 = self.train_set_unscaled.iloc[:,j]
 
-        fig = self.train_set.plot(kind = 'scatter', x = self.train_set.columns[i], y = self.train_set.columns[j], alpha = 0.1)
+        fig = self.train_set_unscaled.plot(kind = 'scatter', x = self.train_set_unscaled.columns[i], y = self.train_set_unscaled.columns[j], alpha = 0.1)
         plt.title(self.stock_name)
         plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/scatter_' + var1.name + '_' + var2.name + '.pdf')
         plt.close('all')
       
   def make_scatter_heat_plots(self):
-    for i in range(len(self.train_set.columns) - 1):
-      for j in range(i+1, len(self.train_set.columns) - 1):
-        for k in range(j+1, len(self.train_set.columns) - 1):
-          for l in range(k+1, len(self.train_set.columns) - 1):
-            var1 = self.train_set.iloc[:,i]
-            var2 = self.train_set.iloc[:,j]
-            var3 = self.train_set.iloc[:,k]
-            var4 = self.train_set.iloc[:,l]
+    for i in range(len(self.train_set_unscaled.columns) - 1):
+      for j in range(i+1, len(self.train_set_unscaled.columns) - 1):
+        for k in range(j+1, len(self.train_set_unscaled.columns) - 1):
+          for l in range(k+1, len(self.train_set_unscaled.columns) - 1):
+            var1 = self.train_set_unscaled.iloc[:,i]
+            var2 = self.train_set_unscaled.iloc[:,j]
+            var3 = self.train_set_unscaled.iloc[:,k]
+            var4 = self.train_set_unscaled.iloc[:,l]
 
-            ax = self.train_set.plot.scatter(x = self.train_set.columns[i], y = self.train_set.columns[j], c = self.train_set.columns[l], colormap = 'viridis', alpha = 0.1)
+            ax = self.train_set_unscaled.plot.scatter(x = self.train_set_unscaled.columns[i], y = self.train_set_unscaled.columns[j], c = self.train_set_unscaled.columns[l], colormap = 'viridis', alpha = 0.1)
             plt.title(self.stock_name + ': Heat Scatter Plot')
             plt.savefig(self.input_args.output_dir + '/' + self.stock_name + '/heat_scatter_' + var1.name + '_' + var2.name + '_' + var3.name + '_' + var4.name + '.pdf')
             plt.close('all')
@@ -144,8 +135,8 @@ class stock_object_class:
       return palette_ind
 
     #simple correlation plot
-    corr = self.train_set.corr()
-    axes = scatter_matrix(self.train_set[['Date', 'Volume', 'Open', 'High', 'Low', 'Close']], alpha = 0.2)
+    corr = self.train_set_unscaled.corr()
+    axes = scatter_matrix(self.train_set_unscaled[['Date', 'Volume', 'Open', 'High', 'Low', 'Close']], alpha = 0.2)
     plt.suptitle(self.stock_name + ': Correlations')
     for i, j in zip(*plt.np.triu_indices_from(axes, k=1)):
       axes[i,j].annotate("%.3f" %corr.iloc[i][j], (0.7, 0.8), xycoords = 'axes fraction', ha = 'center', va = 'center')
@@ -164,9 +155,9 @@ class stock_object_class:
 
   def make_time_dependent_plots(self):
     time_plots = list()
-    for var in self.train_set.columns:
+    for var in self.train_set_unscaled.columns:
       if var != self.input_args.date_name:
-        ax = time_plots.append(self.train_set.plot(x = self.input_args.date_name, y = var))
+        ax = time_plots.append(self.train_set_unscaled.plot(x = self.input_args.date_name, y = var))
         plt.xlabel('Date')
         plt.ylabel(var)
         plt.title(self.stock_name + ': ' + var + ' vs. Time')
