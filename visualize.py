@@ -135,33 +135,31 @@ if __name__ == '__main__':
         print('hi')
         poly_fit(stock, n)
     print('xgb predict')
-    xgb_predict(stock, 4, 4, 1, 1, 1)
+    xgb_predict(stock, 658, 60, .69)
     print('xgb sequential predict')
-    n_estimators = [10] #more is better
-    max_depth = [10] #for estimators = 10, 20 was best
-    learning_rate = [1] #0.9 looked best
-    min_child_weight = [1] #seemed to have no effect
-    subsample = [1]#1 seemed best
+    n_estimators = [100] #more is better
+    max_depth = [70] #for estimators = 10, 20 was best
+    learning_rate = [.13] #0.9 looked best
+    min_child_weight = [.96] #seemed to have no effect
+    subsample = [0.4]#1 seemed best
 
-    def xgb_rmse(max_depth, n_estimators, learning_rate):
-      params = {'n_estimators': n_estimators, 'learning_rate': learning_rate, 'max_depth': max_depth}
-      print('my  params')
-      print(params)
-      xgb_val = xgb_predict(stock, int(max_depth), int(n_estimators), learning_rate)
-      print('DIS IS DA ERROR')
-      print(xgb_val)
+    def xgb_rmse(max_depth, n_estimators, learning_rate, min_child_weight, subsample):
+      params = {'n_estimators': n_estimators, 'learning_rate': learning_rate, 'max_depth': max_depth, 'min_child_weight': min_child_weight, 'subsample': subsample}
+      xgb_val = xgb_sequential_predict(stock, int(max_depth), int(n_estimators), learning_rate, min_child_weight, subsample)
       return -1.0 * xgb_val
 
-    xgb_bo = BayesianOptimization(xgb_rmse, {'n_estimators': (20,100), 'max_depth': (3,10), 'learning_rate': (0,1)})
-    xgb_bo.maximize(n_iter = 5, init_points = 8)
-    params = xgb_bo.max['params']
-    print('my params')
-    print(params)
-    #n_estimators = [2,4,5,10,15,20,30,40,50] #more is better
-    #max_depth = [3,4,5,6,7,8,9,10,15,20,30,40] #for estimators = 10, 20 was best
-    #learning_rate = [0.1,0.2,0.5,0.7,0.8,1] #0.9 looked best
-    #min_child_weight = [0.1,0.2,0.5,0.7,0.8,1] #seemed to have no effect
-    #subsample = [0.1,0.5,0.7,0.8,1]#1 seemed best
+    #xgb_bo = BayesianOptimization(xgb_rmse, {'n_estimators': (5,1000), 'max_depth': (3,100), 'learning_rate': (0.1,1)})
+    #xgb_bo.maximize(n_iter = 100, init_points = 10)
+    #params = xgb_bo.max['params']
+    #print('Best params')
+    #print(params)
+
+    #xgb_bo = BayesianOptimization(xgb_rmse, {'n_estimators': (5,1000), 'max_depth': (3,100), 'learning_rate': (0.1,1), 'min_child_weight': (0,1), 'subsample': (0,1)})
+    #xgb_bo.maximize(n_iter = 100, init_points = 20)
+    #params = xgb_bo.max['params']
+    #print('Seq Best params')
+    #print(params)
+
     scaled_rmse = []
     unscaled_rmse = []
     hyperparameter_array = []
@@ -169,7 +167,8 @@ if __name__ == '__main__':
       print('----------------------------')
       print(x)
       print(x[0])
-      scaled_weekly_error, unscaled_weekly_error = xgb_sequential_predict(stock,x[0], x[1], x[2], x[3], x[4]) 
+      unscaled_weekly_error = xgb_sequential_predict(stock,x[0], x[1], x[2], x[3], x[4]) 
+      scaled_weekly_error = 0
       scaled_rmse.append(scaled_weekly_error)
       hyperparameter_array.append(x)
       unscaled_rmse.append(unscaled_weekly_error)

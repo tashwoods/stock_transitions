@@ -93,14 +93,9 @@ def xgb_sequential_predict(stock_object, n_estimators, max_depth, learning_rate,
   stock_object.add_unscaled_model(name, unscaled_prediction_set, unscaled_weekly_total_error)
   #stock_object.add_scaled_model("SeqXGBScaled", scaled_prediction_set, scaled_weekly_total_error)
 
-  return scaled_weekly_total_error, unscaled_weekly_total_error
+  return -1.0 * unscaled_weekly_total_error
   
 def xgb_predict(stock_object, n_estimators, max_depth, learning_rate, min_child_weight=1, subsample=1):
-  print(n_estimators)
-  print(max_depth)
-  print(learning_rate)
-  print(min_child_weight)
-  print(subsample)
   x_train_set, y_train_set, x_test_set, y_test_set, scaler = get_x_y_test_train(stock_object, 0, 0)
   model = XGBRegressor(n_estimators = n_estimators, max_depth = max_depth, learning_rate = learning_rate, min_child_weight = min_child_weight, subsample = subsample, colsample_bytree = stock_object.input_args.col_std, colsample_bylevel = stock_object.input_args.col_mean)
   model.fit(x_train_set, y_train_set)
