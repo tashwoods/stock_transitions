@@ -51,8 +51,6 @@ if __name__ == '__main__':
   parser.add_argument('-n_bins_hidden_var_secondary', '--n_bins_hidden_var_secondary', type = int, dest = 'n_bins_hidden_var_secondary', default = 2, help = 'number of bins to use to quantize secondary hidden variables')
   parser.add_argument('-n_hmm_predict_days', '--n_hmm_predict_days', type = int, dest = 'n_hmm_predict_days', default = 100, help = 'number of days to predict stock price using hmm')
   parser.add_argument('-test_set_averaged', '--test_set_averaged', type = int, dest = 'test_set_averaged', default = 1, help = 'set to one to average over the number of days in week for the test set, set to zero to not do this')
-  parser.add_argument('-col_std', '--col_std', type = int, dest = 'col_std', default = 1, help = 'col_std used, recommended to be set to one')
-  parser.add_argument('-col_mean', '--col_mean', type = int, dest = 'col_mean', default = 1, help = 'col_mean used, recommended to be set to one')
   args = parser.parse_args()
 
 
