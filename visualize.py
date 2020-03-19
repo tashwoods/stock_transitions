@@ -1,9 +1,9 @@
 from imported_libraries import *
 
 def worker_plots(stock_object):
-  #stock_object.make_overlay_plot() #overlay stock open, high, low, close vs. t plots
-  #stock_object.make_scatter_heat_plots() #scatter plots with z axis coloring by third variable
-  #stock_object.make_correlation_plots()
+  stock_object.make_overlay_plot() #overlay stock open, high, low, close vs. t plots
+  stock_object.make_scatter_heat_plots() #scatter plots with z axis coloring by third variable
+  stock_object.make_correlation_plots()
   stock_object.make_time_dependent_plots() #for each stock variable individually
 
 if __name__ == '__main__':
@@ -125,14 +125,15 @@ if __name__ == '__main__':
   #Model Data
   for stock in stock_objects_list:
     if args.poly_reg == 1:
-      degrees = [1, 2, 3, 4]
+      degrees = [2]
       for n in degrees:
         poly_fit(stock, n)
         
     print('Simple XGB Fit')
     xgb_predict(stock, 100, 70, .13, .96, 0.4)
     print('XGB Sequential Fit')
-    n_estimators = [100] #more is better
+    n_estimators = [40,100,200,300,400,500,600] #more is better
+    #n_estimators = [200,600] #more is better
     max_depth = [70] #for estimators = 10, 20 was best
     learning_rate = [.13] #0.9 looked best
     min_child_weight = [.96] #seemed to have no effect
@@ -180,11 +181,17 @@ if __name__ == '__main__':
   print(hyperparameter_array[min_index])
   x = [i[0] for i in hyperparameter_array]
   y = [i[1] for i in hyperparameter_array]
-  data = pd.DataFrame({'x': x, 'y': y, 'z':scaled_rmse})
+  plt.plot(x,unscaled_rmse)
+  plt.xlabel('n_estimators')
+  plt.ylabel('RMSE')
+  plt.savefig('rmse_nestimators.pdf')
+  data = pd.DataFrame({'x': x, 'y': y, 'z':unscaled_rmse})
   ax = sns.heatmap(data.pivot_table(index = 'y', columns = 'x', values = 'z'), annot = True, linewidths = 0.5)
   ax.invert_yaxis()
   ax.collections[0].colorbar.set_label('RMSE')
   plt.xlabel('n_estimators')
   plt.ylabel('max_depth')
   plt.savefig('rmse_hyperparameter.pdf')
+
+
   print('----- {} seconds ---'.format(time.time() - start_time))

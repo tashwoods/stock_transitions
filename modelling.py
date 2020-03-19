@@ -115,17 +115,17 @@ def poly_fit(stock_object, n):
   date_name = stock_object.input_args.date_name
 
   #Scale, split, model data
-  test_set, train_set, x_train_set, y_train_set, x_test_set, y_test_set, scaler = get_x_y_test_train(stock_object, -1, 0)
+  test_set, train_set, x_train_set, y_train_set, x_test_set, y_test_set, scaler = get_x_y_test_train(stock_object, 0, 0)
   model = np.poly1d(np.polyfit(train_set[date_name], train_set[predict_var], n))
   test_prediction = model(x_test_set[date_name])
   scaled_prediction_set = get_prediction_dataframe(x_test_set, test_prediction, stock_object)
   unscaled_prediction_set = get_unscaled_data(scaled_prediction_set, stock_object, scaler)
 
   #Obtain and Save Modelling Errors
-  scaled_weekly_total_error = get_general_errors_dataframes(scaled_prediction_set[predict_var], stock_object.test_set[predict_var])
+  scaled_weekly_total_error = get_general_errors_dataframes(scaled_prediction_set[predict_var], test_set[predict_var])
   unscaled_weekly_total_error = get_general_errors_dataframes(unscaled_prediction_set[predict_var], stock_object.test_set_unscaled[predict_var])
   stock_object.add_unscaled_model('Poly' + str(n) + 'UnScaled' , unscaled_prediction_set, unscaled_weekly_total_error)
-  stock_object.add_scaled_model('Poly' + str(n) + 'Scaled', scaled_prediction_set, scaled_weekly_total_error)
+  #stock_object.add_scaled_model('Poly' + str(n) + 'Scaled', scaled_prediction_set, scaled_weekly_total_error)
   print('SCALED: Degree: {} Weekly error: {}'.format(n, scaled_weekly_total_error))
   print('UNSCALED: Degree: {} Weekly error: {}'.format(n, unscaled_weekly_total_error))
 
