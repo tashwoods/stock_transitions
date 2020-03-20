@@ -73,11 +73,18 @@ if __name__ == '__main__':
     if len(stock.strip()) > 0:
       stock = stock.rstrip()
       data = yf.download(stock)
+      #check that input columns valid
+      #check that date range good
+      #process dataset (reformat date, possibly add features)
+      #create train and test sets, push stuff into object
+      #append stock objects to list
+      if data.columns = args.
       print(type(data))
-      print('yfinance data')
+      print(stock)
       print(data)
+      print(data.index)
       
-      exit()
+  exit()
 
   for file_name in input_file:
     if len(file_name.strip()) > 0:
