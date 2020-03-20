@@ -56,6 +56,8 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
 
+
+
   #Organize and format input and output
   make_output_dir(args.output_dir)
   start_time = time.time()
@@ -63,8 +65,20 @@ if __name__ == '__main__':
   stock_objects_names = list() 
   available_files = []
 
+  
+
   #Process input file list
   input_file = open(args.input_file, "r")
+  for stock in input_file:
+    if len(stock.strip()) > 0:
+      stock = stock.rstrip()
+      data = yf.download(stock)
+      print(type(data))
+      print('yfinance data')
+      print(data)
+      
+      exit()
+
   for file_name in input_file:
     if len(file_name.strip()) > 0:
       file_name = file_name.rstrip()

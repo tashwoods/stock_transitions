@@ -156,6 +156,7 @@ def overlay_predictions(stock_object):
   plt.plot(stock_object.test_set_unscaled[stock_object.input_args.date_name], stock_object.test_set_unscaled[stock_object.input_args.predict_var], label = 'Test set')
 
   plt.legend()
+  gca().get_xaxis().get_major_formatter().set_useOffset(False)
   plt.xlabel(stock_object.input_args.date_name)
   plt.ylabel(stock_object.input_args.predict_var)
   plt.title(stock_object.input_args.predict_var + ' vs. ' + stock_object.input_args.date_name + ': All UnScaled Models')
@@ -182,7 +183,7 @@ def prediction_overlay_plot(test_set, train_set, model, rmse, name, stock_object
   plt.plot(test_set[stock_object.input_args.date_name], test_set[stock_object.input_args.predict_var], label = 'Test set')
   plt.plot(train_set[stock_object.input_args.date_name], train_set[stock_object.input_args.predict_var], label = 'Train Set')
   plt.plot(model[stock_object.input_args.date_name], model[stock_object.input_args.predict_var], label = '{} Fit RMSE = {}'.format(name, rmse))
-
+  
   plt.legend()
   plt.xlabel(stock_object.input_args.date_name)
   plt.ylabel(stock_object.input_args.predict_var)

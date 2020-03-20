@@ -21,6 +21,7 @@ from hmmlearn.base import ConvergenceMonitor
 from xgboost import XGBRegressor
 from bayes_opt import BayesianOptimization
 from sklearn.metrics import mean_squared_error
+import yfinance as yf
 
 from classes import *
 from organize_input_output import *
