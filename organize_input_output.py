@@ -1,8 +1,8 @@
 from imported_libraries import *
 
 def add_attributes(dataset): #Natasha: make this less hardcoded and more dynamic
-  dataset['Open_Close'] = dataset['Open']/dataset['Close']
-  dataset['Low_High'] = dataset['Low']/dataset['High']
+  #dataset['Open_Close'] = dataset['Open']/dataset['Close']
+  #dataset['Low_High'] = dataset['Low']/dataset['High']
   dataset['Close_Open_Change'] = (dataset['Close'] - dataset['Open'])/dataset['Open']
   dataset['High_Open_Change'] = (dataset['High'] - dataset['Open'])/dataset['Open']
   dataset['Low_Open_Change'] = (dataset['Open'] - dataset['Low'])/dataset['Open']

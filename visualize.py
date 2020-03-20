@@ -1,10 +1,11 @@
 from imported_libraries import *
 
 def worker_plots(stock_object):
-  stock_object.make_overlay_plot() #overlay stock open, high, low, close vs. t plots
-  stock_object.make_scatter_heat_plots() #scatter plots with z axis coloring by third variable
-  stock_object.make_correlation_plots()
-  stock_object.make_time_dependent_plots() #for each stock variable individually
+  #stock_object.make_overlay_plot() #overlay stock open, high, low, close vs. t plots
+  #stock_object.make_scatter_heat_plots() #scatter plots with z axis coloring by third variable
+  #stock_object.make_correlation_plots()
+  #stock_object.make_time_dependent_plots() #for each stock variable individually
+  return
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description = 'arg parser for visualize.py')
@@ -34,16 +35,17 @@ if __name__ == '__main__':
   parser.add_argument('-scale_features', '--scale_features', type = int, dest = 'scale_features', default = 1, help = 'set to one to scale features using StandardScaler(), 0 to not, using entire dataset')
   parser.add_argument('-iteratively_scale_features', '--iteratively_scale_features', type = int, dest = 'iteratively_scale_features', default = 0, help = 'set to one to iteratively scale data points to train set plus all previous test set points')
   parser.add_argument('-combined_features', '--combined_features', type = int, dest = 'combined_features', default = 0, help = 'set to one to add combined features to dataset, zero to not')
-  parser.add_argument('-anticipated_columns', '--anticipated_columns', type = str, dest = 'anticipated_columns', default = 'Date,Open,High,Low,Close,Volume,OpenInt', help = 'list of columns that are expected in text files')
+  #parser.add_argument('-anticipated_columns', '--anticipated_columns', type = str, dest = 'anticipated_columns', default = 'Date,Open,High,Low,Close,Volume,OpenInt', help = 'list of columns that are expected in text files')
+  parser.add_argument('-anticipated_columns', '--anticipated_columns', type = str, dest = 'anticipated_columns', default = 'Date,Open,High,Low,Close,Adj Close,Volume', help = 'list of columns that are expected in text files')
   parser.add_argument('-poly_reg', '--poly_reg', type = int, dest = 'poly_reg', default = 0, help = 'set to one to model stock open price with polynominal regression')
   parser.add_argument('-min_year', '--min_year', type = str, dest = 'min_year', default = '2008', help = 'first year to require stock data for')
-  parser.add_argument('-max_year', '--max_year', type = str, dest = 'max_year', default = '2016', help = 'last year to require stock data for')
+  parser.add_argument('-max_year', '--max_year', type = str, dest = 'max_year', default = '2019', help = 'last year to require stock data for')
   parser.add_argument('-min_month', '--min_month', type = str, dest = 'min_month', default = '01', help = 'month of the first year to require stock data for')
   parser.add_argument('-max_month', '--max_month', type = str, dest = 'max_month', default = '01', help = 'month of the last year to require stock data for')
-  parser.add_argument('-year_test_set', '--year_test_set', type = str, dest = 'year_test_set', default = '2016', help = 'year to begin test set with')
+  parser.add_argument('-year_test_set', '--year_test_set', type = str, dest = 'year_test_set', default = '2020', help = 'year to begin test set with')
   parser.add_argument('-month_test_set', '--month_test_set', type = str, dest = 'month_test_set', default = '01', help = 'month to begin test set with')
   parser.add_argument('-day_test_set', '--day_test_set', type = str, dest = 'day_test_set', default = '01', help = 'day of month to begin test set with')
-  parser.add_argument('-days_in_week', '--days_in_week', type = int, dest = 'days_in_week', default = 7, help = 'days in week to use for weekly averging')
+  parser.add_argument('-days_in_week', '--days_in_week', type = int, dest = 'days_in_week', default = 1, help = 'days in week to use for weekly averging')
   parser.add_argument('-days_in_month', '--days_in_month', type = int, dest = 'days_in_month', default = 30, help = 'days in month to use for month averging')
   parser.add_argument('-n_hidden_markov_states', '--n_hidden_markov_states', type = int, dest = 'n_hidden_markov_states', default = 2, help = 'number of hidden markov states to use')
   parser.add_argument('-n_latency_days', '--n_latency_days', type = int, dest = 'n_latency_days', default = 1000, help = 'number of latency days to use for hidden markov chain')
@@ -96,6 +98,9 @@ if __name__ == '__main__':
     file_name = file_name.rstrip()
     make_nested_dir(args.output_dir, get_stock_name(file_name))
     test_set_unscaled, train_set_unscaled, all_data_set_unscaled = make_test_train_datasets(file_name, args)
+    if i == 0:
+      print('test_set')
+      print(test_set_unscaled)
     if type(test_set_unscaled) != None and type(train_set_unscaled) != None:
       stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set_unscaled, train_set_unscaled, all_data_set_unscaled, args))
       stock_objects_names.append(get_stock_name(file_name))
@@ -130,31 +135,34 @@ if __name__ == '__main__':
         poly_fit(stock, n)
         
     print('Simple XGB Fit')
-    xgb_predict(stock, 100, 70, .13, .96, 0.4)
-    print('XGB Sequential Fit')
-    n_estimators = [40,100,200,300,400,500,600] #more is better
-    #n_estimators = [200,600] #more is better
-    max_depth = [70] #for estimators = 10, 20 was best
+
+    n_estimators = [950] #more is better
+    max_depth = [90] #for estimators = 10, 20 was best
     learning_rate = [.13] #0.9 looked best
-    min_child_weight = [.96] #seemed to have no effect
-    subsample = [0.4]#1 seemed best
+    min_child_weight = [.28] #seemed to have no effect
+    subsample = [0.88]#1 seemed best
+    xgb_predict(stock,950,90,0.13,0.28,0.88)
 
     def xgb_rmse(max_depth, n_estimators, learning_rate, min_child_weight, subsample):
       params = {'n_estimators': n_estimators, 'learning_rate': learning_rate, 'max_depth': max_depth, 'min_child_weight': min_child_weight, 'subsample': subsample}
       xgb_val = xgb_sequential_predict(stock, int(max_depth), int(n_estimators), learning_rate, min_child_weight, subsample)
       return -1.0 * xgb_val
 
-    #xgb_bo = BayesianOptimization(xgb_rmse, {'n_estimators': (5,1000), 'max_depth': (3,100), 'learning_rate': (0.1,1)})
-    #xgb_bo.maximize(n_iter = 100, init_points = 10)
-    #params = xgb_bo.max['params']
-    #print('Best params')
-    #print(params)
-
     #xgb_bo = BayesianOptimization(xgb_rmse, {'n_estimators': (5,1000), 'max_depth': (3,100), 'learning_rate': (0.1,1), 'min_child_weight': (0,1), 'subsample': (0,1)})
-    #xgb_bo.maximize(n_iter = 100, init_points = 20)
+    #xgb_bo.maximize(n_iter = 20, init_points = 20)
     #params = xgb_bo.max['params']
-    #print('Seq Best params')
+    #print('Simple XGB Best params')
+    #print(params['max_depth'])
+    #print(params))
+    #xgb_predict(stock, params['n_estimators'],['max_depth'], params['learning_rate'], params['min_child_weight'], params['subsample'])
+
+    print('XGB Sequential Fit')
+    #xgb_bo = BayesianOptimization(xgb_rmse, {'n_estimators': (5,1000), 'max_depth': (3,100), 'learning_rate': (0.1,1), 'min_child_weight': (0,1), 'subsample': (0,1)})
+    #xgb_bo.maximize(n_iter = 20, init_points = 20)
+    #params = xgb_bo.max['params']
+    #print('Seq XGB Best params')
     #print(params)
+    #xgb_predict(stock, int(params['n_estimators']), int(params['max_depth']), params['learning_rate'], params['min_child_weight'], params['subsample'])
 
     scaled_rmse = []
     unscaled_rmse = []

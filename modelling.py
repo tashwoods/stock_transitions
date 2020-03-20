@@ -70,6 +70,15 @@ def xgb_sequential_predict(stock_object, n_estimators, max_depth, learning_rate,
     prediction_array = prediction_array.append(estimate_array)
     unscaled_df = scaler.inverse_transform(prediction_array)
     test_prediction_unscaled.append(unscaled_df[-1]) #only add predict var estimate to array
+
+    #print('feature importance')
+    #feature_dict = {}
+    #for col, score in zip(stock_object.train_set_unscaled.columns, model.feature_importances_):
+    #  feature_dict[col] = score
+    #  print(col,score)
+    #ordered_feature_list = sorted(feature_dict, key = feature_dict.get, reverse=True)
+    #for 
+    #print(ordered_feature_list)
     
   test_prediction = np.asarray(test_prediction)
   test_prediction_unscaled = np.asarray(test_prediction_unscaled)
@@ -106,6 +115,10 @@ def xgb_predict(stock_object, n_estimators, max_depth, learning_rate, min_child_
   #Plot Results 
   prediction_overlay_plot(stock_object.test_set_unscaled, stock_object.train_set_unscaled, unscaled_prediction_set, unscaled_weekly_total_error, 'XGBUnScaled', stock_object)
   prediction_overlay_plot(test_set, train_set, scaled_prediction_set, scaled_weekly_total_error, 'XGBScaled', stock_object)
+
+  print('feature importance')
+  for col, score in zip(stock_object.train_set_unscaled.columns, model.feature_importances_):
+    print(col,score)
 
   return mean_squared_error(y_test_set, test_prediction)
 
