@@ -21,14 +21,11 @@ def averaged_dataframe_array(dataset, days):
   split_data = [dataset[i:i+days] for i in range(0,dataset.shape[0],days)]
   return split_data
 
-def make_test_train_datasets(file_name, args, dataframe = None):
+def make_test_train_datasets(file_name, args):
   #Check metadata of given stock
-  if type(dataframe) == None:
-    formatted_data_unscaled = get_data(file_name, args.date_name)
-    
+  formatted_data_unscaled = get_data(file_name, args.date_name)
   if len(args.drop_columns) > 0:
     formatted_data_unscaled = formatted_data_unscaled.drop(args.drop_columns, axis = 1)
-
   if args.combined_features == 1:
     formatted_data_unscaled = add_attributes(formatted_data_unscaled)
 

@@ -36,12 +36,12 @@ if __name__ == '__main__':
   parser.add_argument('-iteratively_scale_features', '--iteratively_scale_features', type = int, dest = 'iteratively_scale_features', default = 0, help = 'set to one to iteratively scale data points to train set plus all previous test set points')
   parser.add_argument('-combined_features', '--combined_features', type = int, dest = 'combined_features', default = 0, help = 'set to one to add combined features to dataset, zero to not')
   #parser.add_argument('-anticipated_columns', '--anticipated_columns', type = str, dest = 'anticipated_columns', default = 'Date,Open,High,Low,Close,Volume,OpenInt', help = 'list of columns that are expected in text files')
-  parser.add_argument('-anticipated_columns', '--anticipated_columns', type = list, dest = 'anticipated_columns', default = ['Open','High', 'Low', 'Close', 'Adj Close', 'Volume', 'Date'], help = 'list of columns that are expected in text files')
+  parser.add_argument('-anticipated_columns', '--anticipated_columns', type = str, dest = 'anticipated_columns', default = 'Date,Open,High,Low,Close,Adj Close,Volume', help = 'list of columns that are expected in text files')
   parser.add_argument('-poly_reg', '--poly_reg', type = int, dest = 'poly_reg', default = 0, help = 'set to one to model stock open price with polynominal regression')
-  parser.add_argument('-min_year', '--min_year', type = int, dest = 'min_year', default = '2019', help = 'first year to require stock data for')
-  parser.add_argument('-max_year', '--max_year', type = int, dest = 'max_year', default = '2020', help = 'last year to require stock data for')
-  parser.add_argument('-min_month', '--min_month', type = int, dest = 'min_month', default = '01', help = 'month of the first year to require stock data for')
-  parser.add_argument('-max_month', '--max_month', type = int, dest = 'max_month', default = '01', help = 'month of the last year to require stock data for')
+  parser.add_argument('-min_year', '--min_year', type = str, dest = 'min_year', default = '2018', help = 'first year to require stock data for')
+  parser.add_argument('-max_year', '--max_year', type = str, dest = 'max_year', default = '2020', help = 'last year to require stock data for')
+  parser.add_argument('-min_month', '--min_month', type = str, dest = 'min_month', default = '01', help = 'month of the first year to require stock data for')
+  parser.add_argument('-max_month', '--max_month', type = str, dest = 'max_month', default = '01', help = 'month of the last year to require stock data for')
   parser.add_argument('-year_test_set', '--year_test_set', type = str, dest = 'year_test_set', default = '2020', help = 'year to begin test set with')
   parser.add_argument('-month_test_set', '--month_test_set', type = str, dest = 'month_test_set', default = '01', help = 'month to begin test set with')
   parser.add_argument('-day_test_set', '--day_test_set', type = str, dest = 'day_test_set', default = '01', help = 'day of month to begin test set with')
@@ -60,64 +60,47 @@ if __name__ == '__main__':
   start_time = time.time()
   stock_objects_list = list() 
   stock_objects_names = list() 
-  dataframes_list = list()
   available_files = []
-  
+
   #Process input file list
   input_file = open(args.input_file, "r")
-  for stock in input_file:
-    if len(stock.strip()) > 0:
-      stock = stock.rstrip()
-      data = yf.download(stock)
-      data[args.date_name] = data.index #for backwards compatibility
-      input_columns = list(data.columns).sort()
-      requested_columns = list(args.anticipated_columns).sort()
-      if list(data.columns) == args.anticipated_columns:
-        #check that date range good
-        first_date = data['Date'].iloc[0]
-        last_date = data['Date'].iloc[-1]
-        if first_date.year <= args.min_year:
-          if last_date.year >= args.max_year:
-            available_files.append(stock)
-            dataframes_list.append(data)
-        else:
-          print('{} fails date range rqmt {}/{}-{}/{}'.format(stock, args.min_month, args.min_year, args.max_month, args.max_year))
-          continue
-      else:
-        print('{} missing some -anticipated_columns, skipping.'.format(stock))
-        continue
-  print(available_files)
+  for file_name in input_file:
+    if len(file_name.strip()) > 0:
+      file_name = file_name.rstrip()
+      if(os.stat(file_name).st_size > args.min_file_size): #ignore files smaller than min_file_size
+        with open(file_name, 'r') as in_file: #iterate over remaining files
+          lines = in_file.read().splitlines()
+          #Check if date range file meets user specified date range and variable names
+          columns_line = lines[0]
+          first_line = lines[1]
+          last_line = lines[-1]
+          print('lines')
+          print(first_line)
+          print(last_line)
+          if columns_line == args.anticipated_columns: #ignore files missing columns
+            first_line = first_line[:first_line.find(',')].split('-')
+            last_line = last_line[:last_line.find(',')].split('-')
+            first_line = [int(i) for i in first_line]
+            last_line = [int(i) for i in last_line]
+            if first_line[0] < int(args.min_year) or first_line[0] == int(args.min_year) and first_line[1] <= int(args.min_month):
+              if last_line[0] > int(args.max_year) or last_line[0] == int(args.max_year) and last_line[1] >= int(args.max_month):
+                available_files.append(file_name)
+            else:
+              print('{} fails date range rqmt {}/{}-{}/{}'.format(file_name, args.min_month, args.min_year, args.max_month, args.max_year))
+          else:
+            print('{} missing some -anticipated_columns, skipping.'.format(file_name))
 
+  print(available_files)
   if args.number_files != -1: #if number_files != -1 randomly select number_files specified
     print('selecting {} random files from {} input files'.format(args.number_files, len(available_files)))
-    #available_files, dataframes_list = random.sample(zip())
-    idx = np.random.choice(np.arange(len(available_files)), args.number_files, replace = False)
-    available_files = [available_files[i] for i in idx]
-    dataframes_list = [dataframes_list[i] for i in idx]
+    available_files = stock_random.sample(available_files, args.number_files)
 
   #For each valid file create output dir and stock_object and create meta-lists of these
-  for stock_name, dataframe in zip(available_files,dataframes_list):
-    stock_name = stock_name.rstrip()
-    make_nested_dir(args.output_dir, stock_name)
-    #process dataset (reformat date, possibly add features)
-    #create train and test sets, push stuff into object
-    #append stock objects to list
-
-    test_set_unscaled, train_set_unscaled, all_data_set_unscaled = make_test_train_datasets(stock_name, args, dataframe)
-    if type(test_set_unscaled) != None and type(train_set_unscaled) != None:
-      stock_objects_list.append(stock_object_class(file_name, get_stock_name(file_name), test_set_unscaled, train_set_unscaled, all_data_set_unscaled, args))
-      stock_objects_names.append(get_stock_name(file_name))
-      if i % 100 == 0:
-        print(test_set_unscaled)
-        print('Datasets made for {} of {} files in {} seconds.'.format(i, len(available_files), time.time() - start_time))
-  print('number of items selected: {}'.format(len(stock_objects_list)))
-
-  exit()
   for i in range(len(available_files)):
     file_name = available_files[i]
     file_name = file_name.rstrip()
     make_nested_dir(args.output_dir, get_stock_name(file_name))
-    test_set_unscaled, train_set_unscaled, all_data_set_unscaled = make_test_train_datasets(file_name, args, 'yfinance')
+    test_set_unscaled, train_set_unscaled, all_data_set_unscaled = make_test_train_datasets(file_name, args)
     if i == 0:
       print('test_set')
       print(test_set_unscaled)
@@ -127,7 +110,7 @@ if __name__ == '__main__':
       if i % 100 == 0:
         print('Datasets made for {} of {} files in {} seconds.'.format(i, len(available_files), time.time() - start_time))
   print('number of items selected: {}'.format(len(stock_objects_list)))
-  exit()
+
   #Plot Data
   if args.indiv_plots == 1:
     #Create multiple threads for speedy plotting
@@ -223,30 +206,3 @@ if __name__ == '__main__':
 
 
   print('----- {} seconds ---'.format(time.time() - start_time))
-
-
-
-  '''
-  for file_name in input_file:
-    if len(file_name.strip()) > 0:
-      file_name = file_name.rstrip()
-      if(os.stat(file_name).st_size > args.min_file_size): #ignore files smaller than min_file_size
-        with open(file_name, 'r') as in_file: #iterate over remaining files
-          lines = in_file.read().splitlines()
-          #Check if date range file meets user specified date range and variable names
-          columns_line = lines[0]
-          first_line = lines[1]
-          last_line = lines[-1]
-          if columns_line == args.anticipated_columns: #ignore files missing columns
-            first_line = first_line[:first_line.find(',')].split('-')
-            last_line = last_line[:last_line.find(',')].split('-')
-            first_line = [int(i) for i in first_line]
-            last_line = [int(i) for i in last_line]
-            if first_line[0] < int(args.min_year) or first_line[0] == int(args.min_year) and first_line[1] == int(args.min_month):
-              if last_line[0] > int(args.max_year) or last_line[0] == int(args.max_year) and last_line[1] == int(args.max_month):
-                available_files.append(file_name)
-            else:
-              print('{} fails date range rqmt {}/{}-{}/{}'.format(file_name, args.min_month, args.min_year, args.max_month, args.max_year))
-          else:
-            print('{} missing some -anticipated_columns, skipping.'.format(file_name))
-  '''
